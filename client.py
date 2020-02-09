@@ -1,5 +1,6 @@
 import socket
 import time
+from algo import get_move
 
 # Server commends
 SET = "SET"
@@ -65,6 +66,19 @@ class Client:
         self.map = []
         for i in range(self.n):
             self.map.append(self.m * ["0"])
+    
+    def decode_move(self, move):
+        print("MOV")
+        msg = MOV
+        i = 0
+        for j in range(1, len(move)):
+            if move[j] == 'x':
+                n = int(move[i:j])
+                msg += int_to_byte(n)
+                i = j + 1
+                print(n, end = '\t')
+        print('\n\n')
+        return msg
     
     def handle_data(self, buffer, nbytes):
         bytes_read = 0
@@ -239,13 +253,7 @@ class Client:
         self.start_game()
     
     def start_game(self):
-        # Prepare moves in advance for testing
-        moves = []
-        moves.append(MOV + int_to_byte(1) + int_to_byte(5) + int_to_byte(4) + int_to_byte(3) + int_to_byte(4) + int_to_byte(4))
-        moves.append(MOV + int_to_byte(1) + int_to_byte(4) + int_to_byte(4) + int_to_byte(4) + int_to_byte(3) + int_to_byte(3))
-        moves.append(MOV + int_to_byte(1) + int_to_byte(3) + int_to_byte(3) + int_to_byte(4) + int_to_byte(2) + int_to_byte(2))
-        moves.append(MOV + int_to_byte(1) + int_to_byte(2) + int_to_byte(2) + int_to_byte(5) + int_to_byte(2) + int_to_byte(3))
-        counter = 0
+        counter = 0 # for testing
         
         # Play the game
         while self.running:
@@ -256,16 +264,15 @@ class Client:
             if not self.running:
                 break
             
+            # Get next move from C++ algo
+            #move = get_move(self.map, counter)
+            move = get_move(counter)     # for testing
+            msg = self.decode_move(move)
+            counter += 1                 # for testing
+            
             # Send player's move to server
-            msg = self.get_move()
-            time.sleep(2)           # for testing
-            msg = moves[counter]    # for testing
-            counter += 1            # for testing
+            time.sleep(2) # for testing
             self.client_socket.send(msg)
-    
-    def get_move(self):
-        #TODO
-        return MOV + int_to_byte(1) + int_to_byte(0) + int_to_byte(0) + int_to_byte(1) + int_to_byte(1) + int_to_byte(1)
 
 # Create a client
 client = Client(b"Towelie33", "localhost", 5555)
