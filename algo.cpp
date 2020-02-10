@@ -4,35 +4,24 @@
 #include <cstring>
 #include <vector>
 #include <Python.h>
-  
-int fact(int n)
-{
-    if (n < 2)
-    {
-        return 1;
-    }
-    return n * fact(n - 1);
-}
 
-// Encapsulation de la fonction 'fact' pour utilisation par Python
-static PyObject* algo_fact(PyObject *self, PyObject *args)
+/**
+ * Turn a std::string into a c string
+ * @param str The string to convert
+ * @return The string as a c string
+ */
+char* to_c_string(std::string str)
 {
-    int n;
-    if (!PyArg_ParseTuple(args, "i", &n))
-    {
-        return NULL;
-    }
-    return (PyObject*) Py_BuildValue("i", fact(n));
-}
-
-
-char* to_c_string(std::string s)
-{
-    char* cstr = new char[s.size() + 1];
-    strcpy(cstr, s.c_str());
+    char* cstr = new char[str.size() + 1];
+    strcpy(cstr, str.c_str());
     return cstr;
 }
 
+/**
+ * Convert an int to a string
+ * @param i The int to convert
+ * @return The int as a string
+ */
 std::string int_to_string(int i)
 {
     std::stringstream sstream;
@@ -40,24 +29,53 @@ std::string int_to_string(int i)
     return sstream.str();
 }
 
-std::string int_to_hex_string(int i) // 0 <= i < 256
+/**
+ * Convert a PyObject to a map
+ * @param py_map The object to convert
+ * @param map The map to store the converted object
+ * @return If the conversion was a success
+ */
+bool pyObject_to_map(PyObject *py_map, std::vector<std::vector<char*> > *map)
 {
-    std::stringstream sstream;
-    if (i < 16)
+    if (!PyList_Check(py_map))
     {
-        sstream << "x0" << std::hex << i;
-        return sstream.str();
+        return false;
     }
-    else
+    int n = PyList_GET_SIZE(py_map);
+    for (int i = 0; i < n; ++i)
     {
-        sstream << "x" << std::hex << i;
-        return sstream.str();
+        PyObject *py_line = PyList_GET_ITEM(py_map, i);
+        if (!PyList_Check(py_line))
+        {
+            return false;
+        }
+        int m = PyList_GET_SIZE(py_line);
+        std::vector<char*> line(m);
+        for (int j = 0; j < m; ++j)
+        {
+            PyObject *py_val = PyList_GET_ITEM(py_line, j);
+            PyObject *py_repr = PyObject_Repr(py_val);
+            PyObject *py_str = PyUnicode_AsEncodedString(py_repr, "utf-8", "~E~");
+            char *val = PyBytes_AS_STRING(py_str);
+            line[j] = val;
+        }
+        map->push_back(line);
     }
+    return true;
 }
 
-char* get_move(/*std::vector<std::vector<std::string> > map, */int counter)
+/**
+ * Calculate the best move to do in a given state
+ * @param species The player's species ('V' or 'W')
+ * @param map The current state
+ * @param counter For testing purposes only
+ * @return The best move found as a string
+ */
+char* get_move(char species, std::vector<std::vector<char*> > map, int counter)
 {
     std::string move = "";
+
+    // For testing only
     if (counter == 0)
     {
         move = int_to_string(1) + "x" + int_to_string(5) + "x" + int_to_string(4) + "x" + int_to_string(3) + "x" + int_to_string(4) + "x" + int_to_string(4) + "x";
@@ -74,31 +92,36 @@ char* get_move(/*std::vector<std::vector<std::string> > map, */int counter)
     {
         move = int_to_string(1) + "x" + int_to_string(2) + "x" + int_to_string(2) + "x" + int_to_string(5) + "x" + int_to_string(2) + "x" + int_to_string(3) + "x";
     }
+
     return to_c_string(move);
 }
 
-// Encapsulation de la fonction 'get_move' pour utilisation par Python
+// Encapsulation of 'get_move' function for Python
 static PyObject* algo_get_move(PyObject *self, PyObject *args)
 {
-    //PyObject *map;
+    char *species;
+    PyObject *py_map;
     int counter;
-    //if (!PyArg_ParseTuple(args, "iO", &counter, &map))
-    if (!PyArg_ParseTuple(args, "i", &counter))
+    if (!PyArg_ParseTuple(args, "sOi", &species, &py_map, &counter))
     {
         return NULL;
     }
-    return (PyObject*) Py_BuildValue("s", get_move(/*map, */counter));
+    std::vector<std::vector<char*> > map;
+    if (!pyObject_to_map(py_map, &map))
+    {
+        return false;
+    }
+    return (PyObject*) Py_BuildValue("s", get_move(*species, map, counter));
 }
 
-// Liste des objets disponibles du module
+// List of objects available in the module
 static PyMethodDef module_methods[] = 
 {
-    {"fact", (PyCFunction) algo_fact, METH_VARARGS},
     {"get_move", (PyCFunction) algo_get_move, METH_VARARGS},
     {NULL, NULL}
 };
 
-// Création d'une structure pour l'initialisation du module
+// Structure for module initialization
 static struct PyModuleDef cModPyDem =
 {
     PyModuleDef_HEAD_INIT,
@@ -108,7 +131,7 @@ static struct PyModuleDef cModPyDem =
     module_methods
 };
 
-// Initialisation du module par Python pendant l'importation
+// Module initialization by Python during import
 PyMODINIT_FUNC PyInit_algo(void)
 {
     return PyModule_Create(&cModPyDem);

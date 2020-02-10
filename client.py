@@ -38,7 +38,7 @@ class Client:
         self.m = 0
         self.map = []
         self.species = "H"
-        self.first_player = False
+        self.first = False
     
     def connect(self):
         # Connect to the server
@@ -185,7 +185,7 @@ class Client:
                     print("v", end = '\t')
                     print("w")
                 else:
-                    self.first_player = True
+                    self.first = True
                 
                 # For each update
                 for i in range(n):
@@ -265,10 +265,9 @@ class Client:
                 break
             
             # Get next move from C++ algo
-            #move = get_move(self.map, counter)
-            move = get_move(counter)     # for testing
+            move = get_move(self.species, self.map, counter) # counter is here for testing
             msg = self.decode_move(move)
-            counter += 1                 # for testing
+            counter += 1                                     # for testing
             
             # Send player's move to server
             time.sleep(2) # for testing
