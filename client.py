@@ -37,7 +37,7 @@ class Client:
         self.n = 0
         self.m = 0
         self.map = []
-        self.species = "H"
+        self.species = 'H'
         self.first = False
     
     def connect(self):
@@ -66,6 +66,16 @@ class Client:
         self.map = []
         for i in range(self.n):
             self.map.append(self.m * ["0"])
+    
+    def map_for_algo(self):
+        map_algo = [self.n, self.m, self.species]
+        for y in range(self.n):
+            for x in range(self.m):
+                if self.map[y][x] != "0":
+                    map_algo.append(self.map[y][x])
+                    map_algo.append(x)
+                    map_algo.append(y)
+        return map_algo
     
     def decode_move(self, move):
         print("MOV")
@@ -164,11 +174,11 @@ class Client:
                         self.map[y][x] = "H" + str(h)
                     elif v > 0:
                         if self.map[y][x] == "S":
-                            self.species = "V"
+                            self.species = 'V'
                         self.map[y][x] = "V" + str(v)
                     elif w > 0:
                         if self.map[y][x] == "S":
-                            self.species = "W"
+                            self.species = 'W'
                         self.map[y][x] = "W" + str(w)
             
             # Commands UPD
@@ -218,6 +228,8 @@ class Client:
                 self.n = 0
                 self.m = 0
                 self.map = []
+                self.species = 'H'
+                self.first = False
                 
                 # Close socket
                 self.close()
@@ -265,14 +277,15 @@ class Client:
                 break
             
             # Get next move from C++ algo
-            move = get_move(self.species, self.map, counter) # counter is here for testing
+            map_algo = self.map_for_algo()
+            move = get_move(map_algo, counter) # counter is here for testing
             msg = self.decode_move(move)
-            counter += 1                                     # for testing
+            counter += 1                      # for testing
             
             # Send player's move to server
             time.sleep(2) # for testing
             self.client_socket.send(msg)
 
-# Create a client
+# Create and connect a client to game server
 client = Client(b"Towelie33", "localhost", 5555)
 client.connect()
