@@ -55,3 +55,55 @@ int16_t min_value(State *state)
     }
     return value;
 }
+
+Action minimax_alphabeta(State &state)
+{
+	State *best_state = 0;
+    int16_t best_value = INT16_MIN;
+    int16_t alpha = INT16_MIN;
+    int16_t beta = INT16_MAX;
+    for (State *s : state.successors())
+    {
+        alpha = std::max(alpha, min_value_alphabeta(s, alpha, beta));
+        if (alpha > best_value)
+        {
+            best_state = s;
+            best_value = alpha;
+        }
+    }
+    return state.action(best_state);
+}
+
+int16_t max_value_alphabeta(State *state, int16_t alpha, int16_t beta)
+{
+	if (state->is_terminal())
+    {
+        return state->utility();
+    }
+    for (State *s : state->successors())
+    {
+        alpha = std::max(alpha, min_value_alphabeta(s, alpha, beta));
+        if (alpha >= beta)
+        {
+        	return alpha;
+        }
+    }
+    return alpha;
+}
+
+int16_t min_value_alphabeta(State *state, int16_t alpha, int16_t beta)
+{
+	if (state->is_terminal())
+    {
+        return state->utility();
+    }
+    for (State *s : state->successors())
+    {
+        beta = std::min(beta, max_value_alphabeta(s, alpha, beta));
+        if (alpha >= beta)
+        {
+        	return beta;
+        }
+    }
+    return beta;
+}

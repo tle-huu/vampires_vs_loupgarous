@@ -31,7 +31,7 @@ char* get_move(Map *map, int counter)
     build_tree(initial_state, DEPTH);
 
     // Get action
-    Action action = minimax(initial_state);
+    Action action = minimax_alphabeta(initial_state);
 
     // For testing only
     if (counter == 0)
