@@ -67,8 +67,8 @@ class Client:
         for i in range(self.n):
             self.map.append(self.m * ["0"])
     
-    def map_for_algo(self):
-        map_algo = [self.n, self.m, self.species]
+    def map_for_algo(self, method = 0):
+        map_algo = [self.n, self.m, self.species, method]
         for y in range(self.n):
             for x in range(self.m):
                 if self.map[y][x] != "0":

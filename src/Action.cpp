@@ -1,6 +1,5 @@
 #include "../include/Action.h"
 
-#include <stdint.h>     /* (u)intN_t */
 #include <string>
 #include <vector>
 

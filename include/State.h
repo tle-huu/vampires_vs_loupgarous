@@ -1,7 +1,7 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include <stdint.h>     /* (u)intN_t */
+#include <stdint.h>     /* int16_t */
 #include <vector>
 
 #include "Map.h"
@@ -14,39 +14,34 @@ class State
 {
 public:
 
-    State(Map map) : m_map(map), m_utility(INT16_MIN) {}
+    State(Map *map, bool turn = true, bool chance = false, double proba = 1.0) : m_map(map), m_turn(turn), m_chance(chance), m_proba(proba) {}
 
-    Map map() const { return m_map; }
-    std::vector<State*> successors() const { return m_successors; }
+    ~State() { delete m_map; }
 
-    int16_t utility();
+    Map* map() const { return m_map; }
+    
+    bool is_max() const { return m_turn; }
+    bool is_chance() const { return m_chance; }
 
-    bool is_terminal() const { return m_successors.empty(); }
+    double proba() const { return m_proba; }
 
-    Action action(State *state) const;
+    int16_t utility() const { return m_map->utility(); }
+
+    bool is_terminal() const { return m_map->is_terminal(); }
+
+    std::vector<Action> actions() const;
+
+    State result(Action const& action) const;
+
+    std::vector<State> successors() const;
 
 
 private:
 
-    Map m_map;
-    int16_t m_utility;
-    std::vector<State*> m_successors;
+    Map *m_map;
+    bool m_turn;		// true for gentil's turn, false for vilain's turn
+    bool m_chance;		// true if it's a state with random
+    double m_proba;
 };
-
-/**
- * Calculate heuristic value of a map
- * TODO
- * @param map The map to calculate heuristic value of
- * @return The heuristic value of the map
- */
-int16_t heuristic(Map const& map);
-
-/**
- * Calculate utility of a map
- * Add all gentil units plus a heuristic value
- * @param map The map to calculate utility of
- * @return The utility of the map
- */
-int16_t calculate_utility(Map const& map);
 
 #endif // STATE_H

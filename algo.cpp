@@ -1,4 +1,4 @@
-#include <stdint.h>     /* (u)intN_t */
+#include <stdint.h>     /* int16_t */
 #include <iostream>
 #include <string>
 #include <cstring>
@@ -13,8 +13,8 @@
 #include "include/State.h"
 #include "include/minimax.h"
 
-/* Maximum depth of the game tree to explore */
-static const uint8_t DEPTH = 3;
+// Maximum depth of the game tree to explore
+static const int16_t MAX_DEPTH = 3;
 
 /**
  * Calculate the best action to do in a given state
@@ -25,13 +25,10 @@ static const uint8_t DEPTH = 3;
 char* get_move(Map *map, int counter)
 {
     // Create initial state
-    State initial_state(*map);
-
-    // Build tree
-    build_tree(initial_state, DEPTH);
+    State origin(map);
 
     // Get action
-    Action action = minimax_alphabeta(initial_state);
+    Action action = expect_minimax_alphabeta(&origin, MAX_DEPTH);
 
     // For testing only
     if (counter == 0)
@@ -55,9 +52,6 @@ char* get_move(Map *map, int counter)
         action.add_move(move);
     }
 
-    // Delete map
-    delete map;
-
     // Return action as a c string
     return action.to_cstring();
 }
@@ -74,7 +68,7 @@ static PyObject* algo_get_move(PyObject *self, PyObject *args)
     {
         return NULL;
     }
-    Map *map = 0;
+    Map *map;
     if (!pyObject_to_map(py_map, map))
     {
         return NULL;

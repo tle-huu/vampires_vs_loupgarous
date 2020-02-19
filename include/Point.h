@@ -1,7 +1,7 @@
 #ifndef POINT_H
 #define POINT_H
 
-#include <stdint.h> 	/* (u)intN_t */
+#include <stdint.h> 	/* int16_t */
 #include <string>
 
 /**
@@ -11,19 +11,21 @@ class Point
 {
 public:
 
-    Point(uint8_t x = 0, uint8_t y = 0) : m_x(x), m_y(y) {}
+    Point(int16_t x = 0, int16_t y = 0) : m_x(x), m_y(y) {}
 
-    uint8_t x() const { return m_x; }
-    uint8_t y() const { return m_y; }
+    int16_t x() const { return m_x; }
+    int16_t y() const { return m_y; }
 
     std::string to_string() const;
 
 
 private:
 
-    const uint8_t m_x;
-    const uint8_t m_y;
+    int16_t m_x;
+    int16_t m_y;
 };
+
+bool operator==(Point const& point1, Point const& point2);
 
 /**
  * Calculate distance between two points in a map
@@ -31,6 +33,6 @@ private:
  * @param point2 The second point
  * @return The distance between these two points
  */
-uint16_t distance(Point const& point1, Point const& point2);
+int16_t distance(Point const& point1, Point const& point2);
 
 #endif // POINT_H

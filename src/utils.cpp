@@ -1,6 +1,6 @@
 #include "../include/utils.h"
 
-#include <stdint.h>		/* (u)intN_t */
+#include <stdint.h>		/* int16_t */
 #include <stdlib.h>     /* atoi */
 #include <sstream>
 #include <string>
@@ -83,7 +83,7 @@ bool pyObject_to_map(PyObject *py_map, Map *&map)
 
     // Get its size
     const int n = PyList_GET_SIZE(py_map);
-    if (n < 2 || n % 3 != 0)
+    if (n < 4 || n % 3 != 1)
     {
         return false;
     }
@@ -95,15 +95,34 @@ bool pyObject_to_map(PyObject *py_map, Map *&map)
     {
         return false;
     }
-    const uint8_t lines = (uint8_t) long_lines;
-    const uint8_t columns = (uint8_t) long_columns;
-    map = new Map(lines, columns);
+    const int16_t lines = (int16_t) long_lines;
+    const int16_t columns = (int16_t) long_columns;
 
     // Get player's species
     const char species = *pyObject_to_cstring(PyList_GET_ITEM(py_map, 2));
 
+    // Get map implementation
+    METHOD = (int16_t) pyObject_to_long(PyList_GET_ITEM(py_map, 3));
+
+    // Initialize map
+    switch (METHOD)
+    {
+        // MapVectors
+        case 0:
+            map = new MapVectors(lines, columns);
+            break;
+
+        // MapGrid
+        case 1:
+            map = new MapGrid(lines, columns);
+            break;
+
+        default:
+            break;
+    }
+
     // Get groups
-    for (int i = 3; i < n; i += 3)
+    for (int i = 4; i < n; i += 3)
     {
         char *group = pyObject_to_cstring(PyList_GET_ITEM(py_map, i));
         if (strlen(group) < 2)
@@ -112,26 +131,26 @@ bool pyObject_to_map(PyObject *py_map, Map *&map)
         }
         const char group_species = *group;
         char *group_number = strchr(group, group[1]);
-        const uint16_t number = (uint16_t) atoi(group_number); // undefined behavior if not an int
+        const int16_t number = (int16_t) atoi(group_number); // undefined behavior if not an int
         const long long_x = pyObject_to_long(PyList_GET_ITEM(py_map, i + 1));
         const long long_y = pyObject_to_long(PyList_GET_ITEM(py_map, i + 2));
         if (long_x < 0 || long_y < 0)
         {
             return false;
         }
-        const uint8_t x = (uint8_t) long_x;
-        const uint8_t y = (uint8_t) long_y;
+        const int16_t x = (int16_t) long_x;
+        const int16_t y = (int16_t) long_y;
         if (group_species == 'H')
         {
-            map->add_human(Human(Point(x, y), number));
+            map->add_human(x, y, number);
         }
         else if (group_species == species)
         {
-            map->add_gentil(Gentil(Point(x, y), number));
+            map->add_gentil(x, y, number);
         }
         else
         {
-            map->add_vilain(Vilain(Point(x, y), number));
+            map->add_vilain(x, y, number);
         }
     }
 

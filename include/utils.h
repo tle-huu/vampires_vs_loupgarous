@@ -3,9 +3,22 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <Python.h>
 
+#include "Group.h"
 #include "Map.h"
+
+/**
+ * Remove an element from a vector
+ * @param vec The target vector
+ * @param element The element to remove
+ */
+template <typename T>
+void remove_element(std::vector<T> &vec, T element)
+{
+	vec.erase(std::remove(vec.begin(), vec.end(), element), vec.end());
+}
 
 /**
  * Turn a std::string into a c string

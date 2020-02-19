@@ -1,88 +1,86 @@
 #include "../include/minimax.h"
 
-#include <stdint.h>     /* (u)intN_t */
+#include <stdint.h>     /* int16_t */
 #include <vector>
+#include <math.h>		/* round */
 #include <algorithm>    /* std::min, std::max */
 
 #include "../include/Action.h"
 #include "../include/State.h"
 
-void build_tree(State &initial_state, uint8_t depth)
+Action minimax(State *origin, int16_t max_depth)
 {
-    //TODO
-}
-
-Action minimax(State &state)
-{
-    State *best_state = 0;
+    Action best_action;
     int16_t best_value = INT16_MIN;
-    for (State *s : state.successors())
+    for (Action const& action : origin->actions())
     {
-        int16_t value = min_value(s);
+        State child = origin->result(action);
+        int16_t value = min_value(&child, max_depth - 1);
         if (value > best_value)
         {
-            best_state = s;
+            best_action = action;
             best_value = value;
         }
     }
-    return state.action(best_state);
+    return best_action;
 }
 
-int16_t max_value(State *state)
+int16_t max_value(State *state, int16_t depth)
 {
-    if (state->is_terminal())
+    if (depth <= 0 || state->is_terminal())
     {
         return state->utility();
     }
     int16_t value = INT16_MIN;
-    for (State *s : state->successors())
+    for (State &child : state->successors())
     {
-        value = std::max(value, min_value(s));
+        value = std::max(value, min_value(&child, depth - 1));
     }
     return value;
 }
 
-int16_t min_value(State *state)
+int16_t min_value(State *state, int16_t depth)
 {
-    if (state->is_terminal())
+    if (depth <= 0 || state->is_terminal())
     {
         return state->utility();
     }
     int16_t value = INT16_MAX;
-    for (State *s : state->successors())
+    for (State &child : state->successors())
     {
-        value = std::min(value, max_value(s));
+        value = std::min(value, max_value(&child, depth - 1));
     }
     return value;
 }
 
-Action minimax_alphabeta(State &state)
+Action minimax_alphabeta(State *origin, int16_t max_depth)
 {
-	State *best_state = 0;
+    Action best_action;
     int16_t best_value = INT16_MIN;
     int16_t alpha = INT16_MIN;
     int16_t beta = INT16_MAX;
-    for (State *s : state.successors())
+    for (Action const& action : origin->actions())
     {
-        alpha = std::max(alpha, min_value_alphabeta(s, alpha, beta));
+        State child = origin->result(action);
+        alpha = std::max(alpha, min_value_alphabeta(&child, max_depth - 1, alpha, beta));
         if (alpha > best_value)
         {
-            best_state = s;
+            best_action = action;
             best_value = alpha;
         }
     }
-    return state.action(best_state);
+    return best_action;
 }
 
-int16_t max_value_alphabeta(State *state, int16_t alpha, int16_t beta)
+int16_t max_value_alphabeta(State *state, int16_t depth, int16_t alpha, int16_t beta)
 {
-	if (state->is_terminal())
+	if (depth <= 0 || state->is_terminal())
     {
         return state->utility();
     }
-    for (State *s : state->successors())
+    for (State &child : state->successors())
     {
-        alpha = std::max(alpha, min_value_alphabeta(s, alpha, beta));
+        alpha = std::max(alpha, min_value_alphabeta(&child, depth - 1, alpha, beta));
         if (alpha >= beta)
         {
         	return alpha;
@@ -91,19 +89,87 @@ int16_t max_value_alphabeta(State *state, int16_t alpha, int16_t beta)
     return alpha;
 }
 
-int16_t min_value_alphabeta(State *state, int16_t alpha, int16_t beta)
+int16_t min_value_alphabeta(State *state, int16_t depth, int16_t alpha, int16_t beta)
 {
-	if (state->is_terminal())
+	if (depth <= 0 || state->is_terminal())
     {
         return state->utility();
     }
-    for (State *s : state->successors())
+    for (State &child : state->successors())
     {
-        beta = std::min(beta, max_value_alphabeta(s, alpha, beta));
+        beta = std::min(beta, max_value_alphabeta(&child, depth - 1, alpha, beta));
         if (alpha >= beta)
         {
         	return beta;
         }
     }
     return beta;
+}
+
+Action expect_minimax_alphabeta(State *origin, int16_t max_depth)
+{
+    Action best_action;
+    int16_t best_value = INT16_MIN;
+    int16_t alpha = INT16_MIN;
+    int16_t beta = INT16_MAX;
+    for (Action const& action : origin->actions())
+    {
+        State child = origin->result(action);
+        alpha = std::max(alpha, expect_minimax_alphabeta(&child, max_depth - 1, alpha, beta));
+        if (alpha > best_value)
+        {
+            best_action = action;
+            best_value = alpha;
+        }
+    }
+    return best_action;
+}
+
+int16_t expect_minimax_alphabeta(State *state, int16_t depth, int16_t alpha, int16_t beta)
+{
+	// If it's a chance node
+	if (state->is_chance())
+	{
+		double value = 0;
+		for (State &child : state->successors())
+	    {
+	        value += child.proba() * (double) expect_minimax_alphabeta(&child, depth, alpha, beta);
+	    }
+	    return (int16_t) round(value);
+	}
+	else
+	{
+		if (depth <= 0 || state->is_terminal())
+	    {
+	        return state->utility();
+	    }
+
+	    // If it's a Max node
+	    if (state->is_max())
+	    {
+	    	for (State &child : state->successors())
+		    {
+		        alpha = std::max(alpha, expect_minimax_alphabeta(&child, depth - 1, alpha, beta));
+		        if (alpha >= beta)
+		        {
+		        	return alpha;
+		        }
+		    }
+		    return alpha;
+	    }
+
+	    // If it's a Min node
+	    else
+	    {
+	    	for (State &child : state->successors())
+		    {
+		        beta = std::min(beta, expect_minimax_alphabeta(&child, depth - 1, alpha, beta));
+		        if (alpha >= beta)
+		        {
+		        	return beta;
+		        }
+		    }
+		    return beta;
+	    }
+	}
 }
