@@ -44,4 +44,11 @@ private:
     double m_proba;
 };
 
+/**
+ * Copy a map implementation
+ * @param map The map to copy
+ * @return The copy
+ */
+Map* copy_map(Map *map);
+
 #endif // STATE_H

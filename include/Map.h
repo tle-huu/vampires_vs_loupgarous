@@ -3,6 +3,7 @@
 
 #include <stdint.h>     /* int16_t */
 #include <vector>
+#include <utility>      /* std::pair */
 
 #include "Point.h"
 #include "Group.h"
@@ -26,15 +27,20 @@ public:
     virtual std::vector<Gentil> gentils() const = 0;
     virtual std::vector<Vilain> vilains() const = 0;
     virtual std::vector<Human> humans() const = 0;
+    virtual std::vector<Battle> battles() const = 0;
 
     virtual void add_gentil(int16_t x, int16_t y, int16_t n) = 0;
     virtual void add_vilain(int16_t x, int16_t y, int16_t n) = 0;
     virtual void add_human(int16_t x, int16_t y, int16_t n) = 0;
+    virtual void add_group(Group *group) = 0; // not for battle groups
 
     int16_t heuristic() const;
     int16_t utility() const;
 
+    std::vector<std::pair<Group*, double> > battle_outcomes(Battle const& battle) const;
+
     virtual bool has_battle() const = 0;
+    virtual void remove_battles() = 0;
 
     virtual bool is_terminal() const = 0;
 
@@ -69,14 +75,17 @@ public:
     virtual std::vector<Gentil> gentils() const { return m_gentils; }
     virtual std::vector<Vilain> vilains() const { return m_vilains; }
     virtual std::vector<Human> humans() const { return m_humans; }
+    virtual std::vector<Battle> battles() const { return m_battles; }
 
     virtual void add_gentil(int16_t x, int16_t y, int16_t n) { m_gentils.push_back(Gentil(Point(x, y), n)); }
     virtual void add_vilain(int16_t x, int16_t y, int16_t n) { m_vilains.push_back(Vilain(Point(x, y), n)); }
     virtual void add_human(int16_t x, int16_t y, int16_t n) { m_humans.push_back(Human(Point(x, y), n)); }
+    virtual void add_group(Group *group);
 
     virtual bool has_battle() const { return !m_battles.empty(); }
+    virtual void remove_battles() { m_battles.clear(); }
 
-    virtual bool is_terminal() const;
+    virtual bool is_terminal() const { return (m_gentils.size() == 0) || (m_vilains.size() == 0); }
 
 
 private:
@@ -89,7 +98,7 @@ private:
 
     Group* get_group(Point const& pos);
     void add_battle(Point position, char attackers, int16_t number_att, char defenders, int16_t number_def);
-    void add_group(char type, Point const& pos, int16_t number); // only for gentil's and vilain's groups
+    void add_monster(char type, Point const& pos, int16_t number); // only for gentil's and vilain's groups
     void remove_gentil(Gentil &gentil);
     void remove_vilain(Vilain &vilain);
     void remove_human(Human &human);
@@ -116,12 +125,15 @@ public:
     virtual std::vector<Gentil> gentils() const;
     virtual std::vector<Vilain> vilains() const;
     virtual std::vector<Human> humans() const;
+    virtual std::vector<Battle> battles() const;
 
     virtual void add_gentil(int16_t x, int16_t y, int16_t n);
     virtual void add_vilain(int16_t x, int16_t y, int16_t n);
     virtual void add_human(int16_t x, int16_t y, int16_t n);
+    virtual void add_group(Group *group);
 
     virtual bool has_battle() const;
+    virtual void remove_battles();
 
     virtual bool is_terminal() const;
 
@@ -155,6 +167,7 @@ private:
     void set_group(int16_t x, int16_t y, char type, int16_t n);
     void set_battle(int16_t x, int16_t y, char att, int16_t number_att);
     void add_attackers(int16_t x, int16_t y, int16_t n) { m_grid[y][x].number_att += n; }
+    char get_att(int16_t x, int16_t y) const { return m_grid[y][x].att; }
     char get_def(int16_t x, int16_t y) const { return m_grid[y][x].def; }
     void remove_group(int16_t x, int16_t y) { m_grid[y][x].type = 'E'; }
 

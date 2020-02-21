@@ -2,7 +2,6 @@
 
 #include <stdint.h> 	/* int16_t */
 #include <string>
-#include <algorithm>	/* std::max */
 
 #include "../include/utils.h"
 
@@ -18,5 +17,5 @@ bool operator==(Point const& point1, Point const& point2)
 
 int16_t distance(Point const& point1, Point const& point2)
 {
-    return std::max(abs(point1.x() - point2.x()), abs(point1.y() - point2.y()));
+    return max(abs(point1.x() - point2.x()), abs(point1.y() - point2.y()));
 }

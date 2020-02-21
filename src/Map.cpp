@@ -2,7 +2,8 @@
 
 #include <stdint.h>     /* int16_t */
 #include <vector>
-#include <math.h>		/* round */
+#include <utility>		/* std::pair */
+#include <math.h>		/* round, pow */
 
 #include "../include/utils.h"
 #include "../include/Point.h"
@@ -21,6 +22,96 @@ int16_t Map::heuristic() const
 int16_t Map::utility() const
 {
     return gentils_number() + heuristic();
+}
+
+std::vector<std::pair<Group*, double> > Map::battle_outcomes(Battle const& battle) const
+{
+	// Initialize vector
+	std::vector<std::pair<Group*, double> > res;
+
+	// Get number of units
+	int E1 = battle.number_att();
+	int E2 = battle.number_def();
+
+	// Set probability that the attacker wins (for E1 <= E2)
+	double P = (double) E1 / (double) (2 * E2);
+
+	// For a battle against humans
+	if (battle.defenders() == 'H')
+	{
+		// Attackers win and convert some humans
+		for (int k = 0, n = E1 + E2; k <= n; ++k)
+		{
+			double proba = binomial_coef(n, k) * pow(P, k + 1) * pow(1 - P, n - k);
+			Group *group = 0;
+			if (battle.attackers() == 'G')
+			{
+				group = new Gentil(battle.position(), k);
+			}
+			else // battle.attackers() == 'V'
+			{
+				group = new Vilain(battle.position(), k);
+			}
+			std::pair<Group*, double> pair(group, proba);
+			res.push_back(pair);
+		}
+
+		// Humans win
+		for (int k = 0, n = E2; k <= n; ++k)
+		{
+			double proba = binomial_coef(n, k) * pow(1 - P, k + 1) * pow(P, n - k);
+			Group *group = new Human(battle.position(), k);
+			std::pair<Group*, double> pair(group, proba);
+			res.push_back(pair);
+		}
+	}
+
+	// For a battle against the opponent
+	else
+	{
+		// Adjust P
+		if (E1 > E2)
+		{
+			P = ((double) E1 / (double) E2) - 0.5;
+		}
+
+		// Attackers win
+		for (int k = 0, n = E1; k <= n; ++k)
+		{
+			double proba = binomial_coef(n, k) * pow(P, k + 1) * pow(1 - P, n - k);
+			Group *group = 0;
+			if (battle.attackers() == 'G')
+			{
+				group = new Gentil(battle.position(), k);
+			}
+			else // battle.attackers() == 'V'
+			{
+				group = new Vilain(battle.position(), k);
+			}
+			std::pair<Group*, double> pair(group, proba);
+			res.push_back(pair);
+		}
+
+		// Defenders win
+		for (int k = 0, n = E2; k <= n; ++k)
+		{
+			double proba = binomial_coef(n, k) * pow(1 - P, k + 1) * pow(P, n - k);
+			Group *group = 0;
+			if (battle.defenders() == 'G')
+			{
+				group = new Gentil(battle.position(), k);
+			}
+			else // battle.defenders() == 'V'
+			{
+				group = new Vilain(battle.position(), k);
+			}
+			std::pair<Group*, double> pair(group, proba);
+			res.push_back(pair);
+		}
+	}
+
+	// Return outcomes
+	return res;
 }
 
 void Map::result(Action const& action)
@@ -43,9 +134,18 @@ bool Map::in_bounds(Point const& point) const
 	return true;
 }
 
-bool MapVectors::is_terminal() const
+void MapVectors::add_group(Group *group)
 {
-	return (m_gentils.size() == 0) || (m_vilains.size() == 0);
+	char type = group->type();
+	if (type == 'G' || type == 'V')
+	{
+		add_monster(type, group->position(), group->number());
+	}
+	else if (type == 'H')
+	{
+		add_human(group->position().x(), group->position().y(), group->number());
+	}
+	delete group;
 }
 
 int16_t MapVectors::gentils_number() const
@@ -82,7 +182,7 @@ void MapVectors::result(Move const& move)
 		}
 		else
 		{
-			add_group(moving_group->type(), move.end(), move.number());
+			add_monster(moving_group->type(), move.end(), move.number());
 		}
 	}
 
@@ -99,7 +199,7 @@ void MapVectors::result(Move const& move)
 			}
 			else
 			{
-				add_group(moving_group->type(), move.end(), dest_group->number() + move.number());
+				add_monster(moving_group->type(), move.end(), dest_group->number() + move.number());
 			}
 		}
 		else
@@ -135,7 +235,7 @@ void MapVectors::result(Move const& move)
 			}
 			else
 			{
-				add_group(moving_group->type(), move.end(), move.number());
+				add_monster(moving_group->type(), move.end(), move.number());
 			}
 		}
 		else
@@ -166,7 +266,7 @@ void MapVectors::result(Move const& move)
 			}
 			else
 			{
-				add_group(moving_group->type(), move.end(), n + battle->number_def());
+				add_monster(moving_group->type(), move.end(), n + battle->number_def());
 			}
 			remove_group(dest_group);
 		}
@@ -181,7 +281,7 @@ void MapVectors::result(Move const& move)
 			}
 			else
 			{
-				add_group(moving_group->type(), move.end(), n);
+				add_monster(moving_group->type(), move.end(), n);
 			}
 			remove_group(dest_group);
 		}
@@ -264,7 +364,7 @@ void MapVectors::add_battle(Point position, char attackers, int16_t number_att, 
 	m_battles.push_back(Battle(position, attackers, number_att, defenders, number_def));
 }
 
-void MapVectors::add_group(char type, Point const& pos, int16_t number)
+void MapVectors::add_monster(char type, Point const& pos, int16_t number)
 {
 	if (type == 'G')
 	{
@@ -303,7 +403,6 @@ void MapVectors::remove_group(Group *group)
 	{
 		Gentil *gentil = dynamic_cast<Gentil*>(group);
 		remove_gentil(*gentil);
-		delete gentil;
 	}
 
 	// If it's a vilain's group
@@ -311,7 +410,6 @@ void MapVectors::remove_group(Group *group)
 	{
 		Vilain *vilain = dynamic_cast<Vilain*>(group);
 		remove_vilain(*vilain);
-		delete vilain;
 	}
 
 	// If it's a human's group
@@ -319,7 +417,6 @@ void MapVectors::remove_group(Group *group)
 	{
 		Human *human = dynamic_cast<Human*>(group);
 		remove_human(*human);
-		delete human;
 	}
 
 	// If it's a battle
@@ -327,10 +424,7 @@ void MapVectors::remove_group(Group *group)
 	{
 		Battle *battle = dynamic_cast<Battle*>(group);
 		remove_battle(*battle);
-		delete battle;
 	}
-
-	delete group;
 }
 
 MapGrid::MapGrid(int16_t lines, int16_t columns)
@@ -405,6 +499,22 @@ std::vector<Human> MapGrid::humans() const
 	return res;
 }
 
+std::vector<Battle> MapGrid::battles() const
+{
+	std::vector<Battle> res;
+	for (int16_t y = 0; y < m_lines; ++y)
+	{
+		for (int16_t x = 0; x < m_columns; ++x)
+		{
+			if (get_type(x, y) == 'B')
+			{
+				res.push_back(Battle(Point(x, y), get_att(x, y), get_number(x, y, false), get_def(x, y), get_number(x, y)));
+			}
+		}
+	}
+	return res;
+}
+
 void MapGrid::add_gentil(int16_t x, int16_t y, int16_t n)
 {
 	set_group(x, y, 'G', n);
@@ -420,6 +530,12 @@ void MapGrid::add_human(int16_t x, int16_t y, int16_t n)
 	set_group(x, y, 'H', n);
 }
 
+void MapGrid::add_group(Group *group)
+{
+	set_group(group->position().x(), group->position().y(), group->type(), group->number());
+	delete group;
+}
+
 bool MapGrid::has_battle() const
 {
 	for (int16_t y = 0; y < m_lines; ++y)
@@ -433,6 +549,20 @@ bool MapGrid::has_battle() const
 		}
 	}
 	return false;
+}
+
+void MapGrid::remove_battles()
+{
+	for (int16_t y = 0; y < m_lines; ++y)
+	{
+		for (int16_t x = 0; x < m_columns; ++x)
+		{
+			if (get_type(x, y) == 'B')
+			{
+				remove_group(x, y);
+			}
+		}
+	}
 }
 
 bool MapGrid::is_terminal() const

@@ -4,8 +4,9 @@
 #include <stdlib.h>     /* atoi */
 #include <sstream>
 #include <string>
-#include <cstring>
+#include <cstring>      /* std::memset */
 #include <vector>
+#include <functional>   /* std::function */
 #include <Python.h>
 
 #include "Map.h"
@@ -22,6 +23,53 @@ std::string int_to_string(int i)
     std::stringstream sstream;
     sstream << i;
     return sstream.str();
+}
+
+int binomial_coef(int n, int k)
+{
+    int *C = new int[k + 1];
+    std::memset(C, 0, sizeof(C));
+    C[0] = 1;
+    for (int i = 1; i <= n; ++i)
+    {
+        for (int j = min(i, k); j > 0; --j)
+        {
+            C[j] = C[j] + C[j - 1];
+        }
+    }
+    int res = C[k];
+    delete[] C;
+    return res;
+}
+
+void nested_loops(int n, int *maxes, std::function<void(int, int*)> &lambda)
+{
+    int *indices = new int[n];
+    std::memset(indices, 0, sizeof(indices));
+    
+    std::function<void()> loop;
+    loop = [&n, &maxes, &indices, &lambda, &loop] () -> void
+    {
+        lambda(n, indices);
+
+        for (int i = 0; i < n; ++i)
+        {
+            if (indices[i] == maxes[i] - 1)
+            {
+                indices[i] = 0;
+            }
+            else
+            {
+                ++indices[i];
+                loop();
+                break;
+            }
+        }
+    };
+
+    loop();
+
+    delete[] indices;
 }
 
 long pyObject_to_long(PyObject *py_long)
@@ -46,31 +94,6 @@ char* pyObject_to_cstring(PyObject *py_str)
     }
     PyObject *py_enc_str = PyUnicode_AsEncodedString(py_str, "utf-8", "~E~");
     return PyBytes_AS_STRING(py_enc_str);
-}
-
-bool pyObject_to_map(PyObject *py_map, std::vector<std::vector<char*> > *map)
-{
-    if (!PyList_Check(py_map))
-    {
-        return false;
-    }
-    const int n = PyList_GET_SIZE(py_map);
-    for (int i = 0; i < n; ++i)
-    {
-        const PyObject *py_line = PyList_GET_ITEM(py_map, i);
-        if (!PyList_Check(py_line))
-        {
-            return false;
-        }
-        const int m = PyList_GET_SIZE(py_line);
-        std::vector<char*> line(m);
-        for (int j = 0; j < m; ++j)
-        {
-            line[j] = pyObject_to_cstring(PyList_GET_ITEM(py_line, j));
-        }
-        map->push_back(line);
-    }
-    return true;
 }
 
 bool pyObject_to_map(PyObject *py_map, Map *&map)

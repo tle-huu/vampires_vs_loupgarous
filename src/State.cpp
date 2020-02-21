@@ -1,8 +1,11 @@
 #include "../include/State.h"
 
-#include <stdint.h>     /* int16_t */
+#include <stdint.h>		/* int16_t */
 #include <vector>
+#include <utility>		/* std::pair */
+#include <functional>	/* std::function */
 
+#include "../include/utils.h"
 #include "../include/Point.h"
 #include "../include/Group.h"
 #include "../include/Map.h"
@@ -10,31 +13,15 @@
 
 std::vector<Action> State::actions() const
 {
-    std::vector<Action> res;
-    //TODO Generate all possible actions from a state
-    return res;
+	std::vector<Action> res;
+	//TODO Generate all possible actions from a state
+	return res;
 }
 
 State State::result(Action const& action) const
 {
 	// Copy map
-	Map *map = 0;
-	switch (METHOD)
-	{
-		// MapVectors
-		case 0:
-			map = new MapVectors;
-			break;
-
-		// MapGrid
-		case 1:
-			map = new MapGrid;
-			break;
-
-		default:
-			break;
-	}
-	*map = *m_map;
+	Map *map = copy_map(m_map);
 
 	// Apply action to the map
 	map->result(action);
@@ -52,11 +39,52 @@ State State::result(Action const& action) const
 
 std::vector<State> State::successors() const
 {
+	// Initialize vector
 	std::vector<State> res;
+
+	// If it's a chance node
 	if (is_chance())
 	{
-		//TODO Generate all possible outcomes from battles in the map
+		// Generate all possible outcomes for each battle in the map
+		std::vector<Battle> battles = m_map->battles();
+		const int n = battles.size();
+		std::vector<std::vector<std::pair<Group*, double> > > outcomes(n);
+		int *maxes = new int[n];
+		for (int i = 0; i < n; ++i)
+		{
+			outcomes[i] = m_map->battle_outcomes(battles[i]);
+			maxes[i] = outcomes[i].size();
+		}
+
+		// Set lambda to generate every possible state
+		std::function<void(int, int*)> lambda = [this, &outcomes, &res] (int n, int *arr) -> void
+		{
+			// Copy map
+			Map *map = copy_map(m_map);
+
+			// Remove battles
+			map->remove_battles();
+
+			// Add each winning group in the map and update the proba
+			double proba = 1.0;
+			for (int i = 0; i < n; ++i)
+			{
+				map->add_group(outcomes[i][arr[i]].first);
+				proba *= outcomes[i][arr[i]].second;
+			}
+
+			// Add state in the vector
+			res.push_back(State(map, m_turn, false, proba));
+		};
+
+		// Add every possible state
+		nested_loops(n, maxes, lambda);
+
+		// Free memory
+		delete[] maxes;
 	}
+
+	// If it's a max/min node
 	else
 	{
 		for (Action const& action : actions())
@@ -64,60 +92,29 @@ std::vector<State> State::successors() const
 			res.push_back(result(action));
 		}
 	}
+
+	// Return states
 	return res;
 }
 
-// deprecated
-void build_tree(State &initial_state, int16_t depth)
+Map* copy_map(Map *map)
 {
-    /*// Get groups of gentils
-    std::vector<Gentil> gentils = initial_state.map().gentils();
-
-    // For each group of gentils
-    for (int gentil_index = 0; gentil_index < gentils.size(); ++gentil_index)
+	Map *copy = 0;
+	switch (METHOD)
 	{
-		// Get gentil group
-		Gentil gentil = gentils[gentil_index];
-		int16_t x = gentil.position().x();
-		int16_t y = gentil.position().y();
-		int16_t n = gentil.number();
+		// MapVectors
+		case 0:
+			copy = new MapVectors;
+			break;
 
-		// For each possible horizontal move
-		for (int16_t dx = -1; dx <= 1; ++dx)
-		{
-			// For each possible vertical move
-			for (int16_t dy = -1; dy <= 1; ++dy)
-			{
-				// Check if there is a move
-				if (dx == 0 && dy == 0)
-				{
-					//continue;
-				}
+		// MapGrid
+		case 1:
+			copy = new MapGrid;
+			break;
 
-				// Get new position
-				Point new_pos(x + dx, y + dy);
-
-				// Check if the move is in-bounds
-				if (initial_state.map().in_bounds(new_pos))
-				{
-					// For each possible number of units to move
-					for (int16_t i = 1; i <= n; ++i)
-					{
-						Map new_map = initial_state.map();
-						if (i == n)
-						{
-							new_map.gentils()[gentil_index].number(n - i);
-						}
-						else
-						{
-							new_map.gentils()[gentil_index].number(n - i);
-						}
-						
-						Gentil new_group(new_pos, i);
-						State new_state(new_map);
-					}
-				}
-			}
-		}
-	}*/
+		default:
+			break;
+	}
+	*copy = *map;
+	return copy;
 }

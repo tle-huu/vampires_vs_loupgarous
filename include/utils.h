@@ -3,22 +3,12 @@
 
 #include <string>
 #include <vector>
-#include <algorithm>
+#include <algorithm>	/* std::remove */
+#include <functional>	/* std::function */
 #include <Python.h>
 
 #include "Group.h"
 #include "Map.h"
-
-/**
- * Remove an element from a vector
- * @param vec The target vector
- * @param element The element to remove
- */
-template <typename T>
-void remove_element(std::vector<T> &vec, T element)
-{
-	vec.erase(std::remove(vec.begin(), vec.end(), element), vec.end());
-}
 
 /**
  * Turn a std::string into a c string
@@ -33,6 +23,57 @@ char* to_c_string(std::string str);
  * @return The int as a string
  */
 std::string int_to_string(int i);
+
+/**
+ * Calculate the minimum of two elements
+ * @param a The first element
+ * @param b The second element
+ * @return The min
+ */
+template <typename T>
+T min(T const& a, T const& b)
+{
+	return a < b ? a : b;
+}
+
+/**
+ * Calculate the maximum of two elements
+ * @param a The first element
+ * @param b The second element
+ * @return The max
+ */
+template <typename T>
+T max(T const& a, T const& b)
+{
+	return a < b ? b : a;
+}
+
+/**
+ * Calculate a binomial coefficient using Pascal triangle
+ * @param n
+ * @param k
+ * @return The binomial coefficient
+ */
+int binomial_coef(int n, int k);
+
+/**
+ * Remove an element from a vector
+ * @param vec The target vector
+ * @param element The element to remove
+ */
+template <typename T>
+void remove_element(std::vector<T> &vec, T element)
+{
+	vec.erase(std::remove(vec.begin(), vec.end(), element), vec.end());
+}
+
+/**
+ * Iterate through nested loops to execute a function
+ * @param n The number of loops
+ * @param maxes The maximum number of iterations of every loop
+ * @param lambda The lambda function to execute for each last iteration
+ */
+void nested_loops(int n, int *maxes, std::function<void(int, int*)> &lambda);
 
 /**
  * Convert a PyObject to a long integer
