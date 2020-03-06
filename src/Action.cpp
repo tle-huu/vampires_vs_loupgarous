@@ -6,6 +6,28 @@
 #include "../include/utils.h"
 #include "../include/Point.h"
 
+
+
+Action::Action() {}
+Action::Action(Move move) { add_move(move); }
+
+Action::Action(std::string actionString){
+    std::vector<std::string> subStr = split(actionString, 'x');
+    for(int i = 0; i<subStr.size()/5; i++){
+        add_move(
+            Move(
+                stoi(subStr[i]),     //x1
+                stoi(subStr[i+1]),
+                stoi(subStr[i+2]),
+                stoi(subStr[i+3]),
+                stoi(subStr[i+4])
+            )
+        );
+    }
+}
+
+
+
 std::string Move::to_string() const
 {
 	return m_start.to_string() + "x" + int_to_string(m_number) + "x" + m_end.to_string();

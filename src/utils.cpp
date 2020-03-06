@@ -18,6 +18,7 @@ char* to_c_string(std::string str)
     return cstr;
 }
 
+
 std::string int_to_string(int i)
 {
     std::stringstream sstream;
@@ -178,4 +179,24 @@ bool pyObject_to_map(PyObject *py_map, Map *&map)
     }
 
     return true;
+}
+
+std::vector<std::string> split(std::string str, char c){
+    std::vector<std::string> stringVect = std::vector<std::string>();
+    int last = 0;
+    for(int i = 0; i<str.length(); i++){
+        if(str[i]==c){
+            std::string strTmp = str.substr(last, i-last);
+            if(!strTmp.empty()){
+                stringVect.push_back(strTmp);
+                last = i+1;
+            }
+            
+        }
+    }
+    std::string strTmp = str.substr(last, str.length()-last);
+    if(!strTmp.empty()){
+        stringVect.push_back(strTmp);
+    }
+    return stringVect;
 }

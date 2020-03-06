@@ -106,4 +106,9 @@ bool pyObject_to_map(PyObject *py_map, std::vector<std::vector<char*> > *map);
  */
 bool pyObject_to_map(PyObject *py_map, Map *&map);
 
+/**
+ * Split a string into several substring
+ */
+std::vector<std::string> split(std::string str, char c);
+
 #endif // UTILS_H
