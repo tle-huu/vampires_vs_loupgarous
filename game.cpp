@@ -8,7 +8,10 @@ using namespace std;
 void play(Map* map);
 
 int main(){
-    play(NULL);
+    MapGrid mg(10,10);
+    mg.add_gentil(1,1,8);
+    mg.add_vilain(9,9, 8);
+    play(&mg);
 }
 
 
@@ -17,9 +20,19 @@ void play(Map* map){
     while(1){
         string move;
         cin >> move;
-        std::vector<string> sub = split(move, 'x');
-        for(int i = 0; i<sub.size(); i++){
-            cout<<sub[i]<<endl;
+        Action act(move);
+
+        map->result(act);
+        for(int i = 0; i<map->columns(); i++){
+            for(int j = 0; j < map->lines(); j++){
+                cout<<map->getCell(i,j).element;
+            }
+            cout<<endl;
+            for(int j = 0; j < map->lines(); j++){
+                cout<<map->getCell(i,j).number;
+            }
+            cout<<endl;
         }
+
     }
 }

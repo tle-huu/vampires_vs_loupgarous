@@ -12,6 +12,12 @@
 // Map implementation : 0 for MapVectors, 1 for MapGrid
 extern int16_t METHOD;
 
+
+struct Cell{
+    char element;
+    int number;
+};
+
 /**
  * An interface to represent a map of the game
  */
@@ -33,6 +39,8 @@ public:
     virtual void add_vilain(int16_t x, int16_t y, int16_t n) = 0;
     virtual void add_human(int16_t x, int16_t y, int16_t n) = 0;
     virtual void add_group(Group *group) = 0; // not for battle groups
+
+    virtual Cell getCell(int x, int y) const = 0;
 
     int16_t heuristic() const;
     int16_t utility() const;
@@ -87,7 +95,7 @@ public:
 
     virtual bool is_terminal() const { return (m_gentils.size() == 0) || (m_vilains.size() == 0); }
 
-
+    virtual Cell getCell(int x, int y) const;
 private:
 
     virtual int16_t gentils_number() const;
@@ -136,6 +144,8 @@ public:
     virtual void remove_battles();
 
     virtual bool is_terminal() const;
+
+    virtual Cell getCell(int x, int y) const;
 
 
 private:

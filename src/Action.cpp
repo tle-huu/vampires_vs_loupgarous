@@ -17,7 +17,7 @@ Action::Action(std::string actionString){
         add_move(
             Move(
                 stoi(subStr[i]),     //x1
-                stoi(subStr[i+1]),
+                stoi(subStr[i+1]),   //x2
                 stoi(subStr[i+2]),
                 stoi(subStr[i+3]),
                 stoi(subStr[i+4])

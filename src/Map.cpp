@@ -427,6 +427,10 @@ void MapVectors::remove_group(Group *group)
 	}
 }
 
+Cell MapVectors::getCell(int x, int y) const{
+	
+}
+
 MapGrid::MapGrid(int16_t lines, int16_t columns)
 	: Map(lines, columns)
 {
@@ -716,4 +720,11 @@ void MapGrid::set_battle(int16_t x, int16_t y, char att, int16_t number_att)
 	m_grid[y][x].type = 'B';
 	m_grid[y][x].att = att;
 	m_grid[y][x].number_att = number_att;
+}
+
+Cell MapGrid::getCell(int x, int y) const{
+	Cell c;
+	c.element = this->m_grid[y][x].type;
+	c.number = this->m_grid[y][x].number;
+	return c;
 }
