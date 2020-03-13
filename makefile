@@ -9,6 +9,7 @@ OBJECT += $(BUILD_DIR)src/minimax.o
 OBJECT += $(BUILD_DIR)src/Point.o
 OBJECT += $(BUILD_DIR)src/utils.o
 OBJECT += $(BUILD_DIR)src/State.o
+OBJECT += $(BUILD_DIR)src/MapStruct.o
 
 LDFLAGS := -lpython3.6m
 

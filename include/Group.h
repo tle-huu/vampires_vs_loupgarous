@@ -93,6 +93,8 @@ public:
 
     virtual char type() const { return 'B'; }
 
+    std::pair<char, int16_t> getResult();
+
 
 private:
 

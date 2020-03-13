@@ -4,6 +4,7 @@
 #include <vector>
 #include <utility>		/* std::pair */
 #include <math.h>		/* round, pow */
+#include <iostream>
 
 #include "../include/utils.h"
 #include "../include/Point.h"
@@ -116,6 +117,7 @@ std::vector<std::pair<Group*, double> > Map::battle_outcomes(Battle const& battl
 
 void Map::result(Action const& action)
 {
+	
 	for (Move const& move : action.moves())
 	{
 		result(move);
