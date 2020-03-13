@@ -45,6 +45,10 @@ public:
 
     bool in_bounds(Point const& point) const;
 
+    std::vector<std::pair<MapStruct, double>> successors();
+
+    
+
 protected:
     virtual void end_battles();
 
@@ -52,6 +56,8 @@ protected:
     virtual void result(Move const& move);
 
 };
+
+std::vector<std::pair<mapCase, double>> sucCases(mapCase* caseToSolve);
 
 
 
