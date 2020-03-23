@@ -9,6 +9,11 @@
 
 
 Action::Action() {}
+/*Action::Action(Action& act){
+    for(int i = 0; i<act.m_moves.size(); i++){
+        add_move(act.m_moves[i]);
+    }
+}*/
 Action::Action(Move move) { add_move(move); }
 
 Action::Action(std::string actionString){

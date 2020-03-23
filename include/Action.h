@@ -38,6 +38,7 @@ class Action
 public:
 
     Action();
+    //Action(Action& act);
     Action(Move move);
     Action(std::string actionString);
 

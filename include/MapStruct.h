@@ -17,6 +17,7 @@ private:
     
 public:
     MapStruct(int16_t lines = 0, int16_t columns = 0);
+    MapStruct(const MapStruct& map);
     ~MapStruct();
 
     virtual std::vector<Gentil> gentils() const;
@@ -46,6 +47,9 @@ public:
     bool in_bounds(Point const& point) const;
 
     std::vector<std::pair<MapStruct, double>> successors();
+    std::vector<std::pair<MapStruct, double>> successors(Action act);
+
+    std::vector<Action> possibleActions(char p);
 
     
 

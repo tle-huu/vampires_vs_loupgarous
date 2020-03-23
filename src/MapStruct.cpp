@@ -2,22 +2,74 @@
 #include "MapStruct.h"
 
 #include <random>
+#include <iostream>
 
 using namespace std;
+
+double myPow(double x, int n){
+    double res = 1.0;
+    double powed = x;
+    while(n > 0){
+        if(n%2){
+            res *= powed;
+        }
+        powed = powed*powed;
+        n /= 2;
+    }
+    return res;
+}
 
 void solveBattle(mapCase* caseToSolve);
 
 std::default_random_engine generator;
+bool seeded = false;
+static long binomCoeff[256][256];
+bool generated = false;
+
+
+void seedGenerator(){
+    if(!seeded){
+        generator.seed(10000);
+        seeded = true;
+    }
+    
+}
+void genrateBinom(){
+    if(!generated){
+        binomCoeff[0][0] = 1;
+        for(int j = 1; j<256; j++){
+            binomCoeff[0][j] = 0;
+    }
+    for(int i = 1; i<256; i++){
+        binomCoeff[i][0] = 1;
+        for(int j = 1; j<256; j++){
+            binomCoeff[i][j] = binomCoeff[i-1][j]+binomCoeff[i-1][j-1];
+        }
+    }
+    generated = true;
+    }
+    
+}
 
 MapStruct::MapStruct(int16_t lines, int16_t columns): Map(lines, columns)
 {
 
-
+    genrateBinom();
+    seedGenerator();
     cases = new mapCase[lines*columns];
     for(int i=0; i<lines*columns; i++){
         cases[i].number = 0;
         cases[i].type = ' ';
         cases[i].numberIncoming = 0;
+    }
+}
+
+MapStruct::MapStruct(const MapStruct& map): Map(map.m_lines, map.m_columns){
+    genrateBinom();
+    seedGenerator();
+    cases = new mapCase[m_lines*m_columns];
+    for(int i=0; i<m_lines*m_columns; i++){
+        cases[i] = map.cases[i];
     }
 }
 
@@ -151,7 +203,16 @@ void solveBattle(mapCase* caseToSolve){
         }
         if(disribution(generator)<=P){
             std::binomial_distribution<int> nDistribution(caseToSolve->numberIncoming,P);
-            caseToSolve->number = nDistribution(generator);
+            if(caseToSolve->type == 'H'){
+                std::binomial_distribution<int> convDistribution(caseToSolve->number,P);
+
+                caseToSolve->number = convDistribution(generator);
+            }
+            else{
+                caseToSolve->number = 0;
+            }
+            
+            caseToSolve->number += nDistribution(generator);
             caseToSolve->numberIncoming = 0;
             caseToSolve->type = caseToSolve->incomingType;
         }
@@ -159,25 +220,24 @@ void solveBattle(mapCase* caseToSolve){
             std::binomial_distribution<int> nDistribution(caseToSolve->number,1-P);
             caseToSolve->number = nDistribution(generator);
             caseToSolve->numberIncoming = 0;
-            caseToSolve->type = caseToSolve->incomingType;
         }
     }
 }
 
 double getBinomial(int n, int j,double P){
-    return 1.0;
+    return myPow(P,j)*myPow(1-P,n-j)*binomCoeff[n][j];
+
 }
 
 vector<pair<mapCase, double>> sucCases(mapCase* caseToSolve){
     vector<pair<mapCase, double>> cases;
     pair<mapCase, double> p = make_pair(*caseToSolve, 1.0);
-
-    if(caseToSolve->numberIncoming == 0){
-        
+    
+    if(caseToSolve->numberIncoming == 0 ){
         cases.push_back(p);
         return cases;
     }
-
+    
     else if(caseToSolve->type == 'H' && caseToSolve->numberIncoming >= caseToSolve->number){
         p.first.type = caseToSolve->incomingType;
         p.first.number += caseToSolve->numberIncoming;
@@ -197,7 +257,7 @@ vector<pair<mapCase, double>> sucCases(mapCase* caseToSolve){
         cases.push_back(p);
         return cases;
     }
-
+    
     double P = 0.5;
     if(caseToSolve->numberIncoming < caseToSolve->number){
         P = ((double) caseToSolve->numberIncoming)/(2.0 * (double)caseToSolve->number);
@@ -205,29 +265,56 @@ vector<pair<mapCase, double>> sucCases(mapCase* caseToSolve){
     if(caseToSolve->numberIncoming > caseToSolve->number){
         P = ((double) caseToSolve->numberIncoming)/((double)caseToSolve->number) - 0.5;
     }
-
         
-        for(int j = 0; j<caseToSolve->numberIncoming; j++){
-            p.first.number = j;
-            p.first.type = caseToSolve->incomingType;
-            p.first.numberIncoming = 0;
-            p.second = P*getBinomial(caseToSolve->numberIncoming, j, P);
-            cases.push_back(p);
+        if(caseToSolve->type!='H'){
+            for(int j = 0; j<=caseToSolve->numberIncoming; j++){
+                p.first.number = j;
+                p.first.type = caseToSolve->incomingType;
+                p.first.numberIncoming = 0;
+                p.second = P*getBinomial(caseToSolve->numberIncoming, j, P);
+                cases.push_back(p);
+            }
+            for(int j = 0; j<=caseToSolve->number; j++){
+                p.first.number = j;
+                p.first.type = caseToSolve->type;
+                caseToSolve->numberIncoming = 0;
+                p.second = (1-P)*getBinomial(caseToSolve->number, j, (1-P));
+                cases.push_back(p);
+            }
         }
-        for(int j = 0; j<caseToSolve->number; j++){
-            p.first.number = j;
-            p.first.type = caseToSolve->incomingType;
-            caseToSolve->numberIncoming = 0;
-            p.second = (1-P)*getBinomial(caseToSolve->number, j, (1-P));
-            cases.push_back(p);
+        else{
+
+            for(int j = 0; j<=caseToSolve->numberIncoming+caseToSolve->number; j++){
+                p.first.number = j;
+                p.first.type = caseToSolve->incomingType;
+                p.first.numberIncoming = 0;
+                for(int k = 0; k<=j ; k++){
+                    p.second += P*getBinomial(caseToSolve->numberIncoming, j-k, P)*getBinomial(caseToSolve->number, k, P);
+                }
+
+                cases.push_back(p);
+            }
+            for(int j = 0; j<=caseToSolve->number; j++){
+                p.first.number = j;
+                p.first.type = caseToSolve->type;
+                caseToSolve->numberIncoming = 0;
+                p.second = (1-P)*getBinomial(caseToSolve->number, j, (1-P));
+                cases.push_back(p);
+            }
         }
+        
         
         
     return cases;
 }
 
 vector<pair<MapStruct, double>> MapStruct::successors(){
+
+    
     vector<pair<MapStruct, double>> prev;
+
+    prev.push_back(make_pair(MapStruct(*this), 1.0));
+
     unsigned long size = 0;
     for(int i = 0; i<m_lines;  i++){
         for(int j = 0; j<m_columns; j++){
@@ -241,11 +328,12 @@ vector<pair<MapStruct, double>> MapStruct::successors(){
                     prev.push_back(p);
                 }
                 prev[l].first.cases[i*m_columns+j] = successors[0].first;
+                    
                 prev[l].second *= successors[0].second;
             }
         }
     }
-    
+    return prev;
 }
 
 void MapStruct::end_battles(){
@@ -277,4 +365,94 @@ void MapStruct::result(Move const& move){
         cases[yEnd*m_columns+xEnd].number += n;
         cases[yEnd*m_columns+xEnd].type = cases[yStart*m_columns+xStart].type;
     }
+}
+
+
+std::vector<std::pair<MapStruct, double>> MapStruct::successors(Action act){
+    MapStruct coucou(*this);
+    for (Move const& move : act.moves())
+	{
+		coucou.result(move);
+	}
+
+    return coucou.successors();
+
+}
+
+bool isDeparture(Action& a, int x, int y){
+    for(int i = 0; i<a.moves().size(); i++){
+        if(a.moves()[i].start().x() == x && a.moves()[i].start().y() == y){
+            return true;
+        }
+    }
+    return false;
+}
+bool isArival(Action& a, int x, int y){
+    for(int i = 0; i<a.moves().size(); i++){
+        if(a.moves()[i].start().x() == x && a.moves()[i].start().y() == y){
+            return true;
+        }
+    }
+    return false;
+}
+
+std::vector<Action> actionsOnCase(int x, int y, int n, Action& action){
+    
+    std::vector<Action> sucActions;
+    //Action a;
+    sucActions.push_back(action);
+    //sucActions.push_back(action);
+    std::vector<int> nRemain;
+    nRemain.push_back(n);
+    for(int dstx = -1; dstx < 2; dstx++){
+        for(int dsty = -1; dsty < 2; dsty++){
+            if(dsty !=  0 || dsty != 0){
+                int nx = x+dstx;
+                int ny = y+dsty;
+                if(!isDeparture(action, nx, ny)){
+                    int size = sucActions.size();
+                    for(int l = 0; l<size; l++){
+                        int nb = nRemain[l];
+                        Action act = sucActions[l];
+                        for(int i = 1; i <= nb; i++){
+                            
+                            //std::cout<<"Coucou"<<std::endl;
+                            sucActions.push_back(act);
+                            sucActions[sucActions.size()-1].add_move(Move(x,y, i, x+dstx, y+dsty));
+                            nRemain.push_back(nb - i);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return sucActions;
+}
+
+
+std::vector<Action> MapStruct::possibleActions(char p){
+    std::vector<Action> actions;
+    
+    actions.push_back(Action());
+
+    unsigned long size = 0;
+    for(int i = 0; i<m_lines;  i++){
+        for(int j = 0; j<m_columns; j++){
+            size = actions.size();
+            
+            if(cases[i*m_columns+j].type == p){
+                
+                for(unsigned long l = 0; l<size ;l++){
+                    
+                    std::vector<Action> newActions = actionsOnCase(j,i, cases[i*m_columns+j].number, actions[l]);
+                    for(int m = 1; m<newActions.size(); m++){
+                        
+                        actions.push_back(newActions[m]);
+                    }
+                }
+            }
+            
+        }
+    }
+    return actions;
 }

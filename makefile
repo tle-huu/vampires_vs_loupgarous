@@ -25,4 +25,4 @@ clean:
 	rm -f exec
 
 $(BUILD_DIR)%.o : %.cpp
-	g++ -o $@ -c $< $(IFLAGS)
+	g++ -o $@ -c $< $(IFLAGS) -g
