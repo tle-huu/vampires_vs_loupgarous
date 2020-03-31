@@ -7,12 +7,37 @@
 
 int16_t METHOD = 1;
 
-int Map::counter_id = 0;
-
 int16_t Map::heuristic() const
 {
     int16_t value = 0;
-    //TODO
+	for (Human const& human : humans())
+	{
+		int16_t gentil_min_dist = INT16_MAX;
+		for (Gentil const& gentil : gentils())
+		{
+			if (human.number() <= gentil.number())
+			{
+				int16_t dist = distance(human, gentil);
+				if (dist < gentil_min_dist)
+				{
+					gentil_min_dist = dist;
+				}
+			}
+		}
+		int16_t vilain_min_dist = INT16_MAX;
+		for (Vilain const& vilain : vilains())
+		{
+			if (human.number() <= vilain.number())
+			{
+				int16_t dist = distance(human, vilain);
+				if (dist < vilain_min_dist)
+				{
+					vilain_min_dist = dist;
+				}
+			}
+		}
+		gentil_min_dist <= vilain_min_dist ? value += human.number() : value -= human.number();
+	}
     return value;
 }
 
@@ -29,7 +54,7 @@ int16_t Map::utility() const
     		return INT16_MAX;
     	}
     }
-    return gentils_number() - vilains_number() + heuristic();
+	return gentils_number() - vilains_number();// + heuristic();
 }
 
 std::vector<std::pair<Group*, double> > Map::battle_outcomes(Battle const& battle) const
@@ -499,11 +524,11 @@ MapGrid::MapGrid(int16_t lines, int16_t columns)
 
 MapGrid::~MapGrid()
 {
-	/*for (int16_t i = 0; i < m_lines; ++i)
+	for (int16_t i = 0; i < m_lines; ++i)
 	{
 		delete[] m_grid[i];
 	}
-	delete[] m_grid;*/
+	delete[] m_grid;
 }
 
 std::vector<Gentil> MapGrid::gentils() const
@@ -573,6 +598,40 @@ std::vector<Battle> MapGrid::battles() const
 void MapGrid::add_group(Group *group)
 {
 	set_group(group->pos_x(), group->pos_y(), group->type(), group->number());
+}
+
+int16_t MapGrid::heuristic() const
+{
+	int16_t value = 0;
+	for (Human const& human : humans())
+	{
+		int16_t gentil_min_dist = INT16_MAX;
+		for (Gentil const& gentil : gentils())
+		{
+			if (human.number() <= gentil.number())
+			{
+				int16_t dist = distance(human, gentil);
+				if (dist < gentil_min_dist)
+				{
+					gentil_min_dist = dist;
+				}
+			}
+		}
+		int16_t vilain_min_dist = INT16_MAX;
+		for (Vilain const& vilain : vilains())
+		{
+			if (human.number() <= vilain.number())
+			{
+				int16_t dist = distance(human, vilain);
+				if (dist < vilain_min_dist)
+				{
+					vilain_min_dist = dist;
+				}
+			}
+		}
+		gentil_min_dist <= vilain_min_dist ? value += human.number() : value -= human.number();
+	}
+	return value;
 }
 
 bool MapGrid::has_battle() const
@@ -651,8 +710,6 @@ MapGrid::MapGrid(MapGrid const& map)
 	// Initialize size
 	m_lines = map.lines();
 	m_columns = map.columns();
-	id = counter_id++;
-	std::cout << "id cloning creation: " << id << std::endl;
 
 	// Initialize grid
 	m_grid = new Square*[m_lines];

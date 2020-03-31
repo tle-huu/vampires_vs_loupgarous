@@ -21,10 +21,8 @@ class Map
 {
 public:
 
-	static int counter_id;
-	int id;
-
-	Map(int16_t lines = 0, int16_t columns = 0) : m_lines(lines), m_columns(columns), id(counter_id++) { std::cout << "id creation: " << id << std::endl; }
+	Map() : m_lines(0), m_columns(0) {}
+	Map(int16_t lines, int16_t columns) : m_lines(lines), m_columns(columns) {}
 
     virtual ~Map() {}
 
@@ -45,7 +43,7 @@ public:
 
 	virtual void remove_group(int16_t x, int16_t y) = 0;
 
-    int16_t heuristic() const;
+    virtual int16_t heuristic() const;
     int16_t utility() const;
 
     std::vector<std::pair<Group*, double> > battle_outcomes(Battle const& battle) const;
@@ -86,7 +84,8 @@ class MapVectors : public Map
 {
 public:
 
-    MapVectors(int16_t lines = 0, int16_t columns = 0) : Map(lines, columns) {}
+	MapVectors() : Map() {}
+    MapVectors(int16_t lines, int16_t columns) : Map(lines, columns) {}
 
 	MapVectors* clone() { return new MapVectors(*this); }
 
@@ -141,7 +140,8 @@ class MapGrid : public Map
 {
 public:
 
-    MapGrid(int16_t lines = 0, int16_t columns = 0);
+    MapGrid() : Map(), m_grid(0) {}
+	MapGrid(int16_t lines, int16_t columns);
 
     virtual ~MapGrid();
 
@@ -158,6 +158,8 @@ public:
     void add_group(Group *group);
 
 	void remove_group(int16_t x, int16_t y) { m_grid[y][x].type = 'E'; }
+
+	int16_t heuristic() const;
 
     bool has_battle() const;
     void remove_battles();

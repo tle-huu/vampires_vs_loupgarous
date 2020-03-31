@@ -17,7 +17,7 @@
 #pragma comment (lib, "ws2_32.lib")
 
 // Maximum depth of the game tree to explore
-static constexpr int16_t MAX_DEPTH = 2;
+static constexpr int16_t MAX_DEPTH = 1;
 
 static constexpr int BUFFER_MAX_SIZE = 1024;
 

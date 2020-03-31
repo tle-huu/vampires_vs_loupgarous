@@ -74,9 +74,14 @@ int Client::send_name() noexcept
 
     std::memcpy(buffer_, "NME", 3);
 
+	std::cout << "NME" << std::endl;
+
     const char size = static_cast<char>(name_.size());
     std::memcpy(buffer_ + 3, &size, 1);
     std::memcpy(buffer_ + 4, name_.data(), name_.size());
+
+	std::cout << "name size: " << name_.size() << std::endl;
+	std::cout << "name: " << name_ << std::endl << std::endl;
 
     return send(buffer_, 3 + 1 + name_.size());
 }
@@ -86,11 +91,12 @@ int Client::send_move() noexcept
 	std::memset(buffer_, 0, BUFFER_MAX_SIZE);
 
 	Map *map = map_->clone();
-	std::cout << "cloning in client, id = " << map->id << std::endl;
 	Action action = get_best_action(map, MAX_DEPTH);
     std::vector<Move> moves = action.moves();
 
 	std::memcpy(buffer_, "MOV", 3);
+
+	std::cout << "MOV" << std::endl;
 
     const char size = static_cast<char>(moves.size());
     std::memcpy(buffer_ + 3, &size, 1);
@@ -98,21 +104,25 @@ int Client::send_move() noexcept
     int index = 4;
     for (Move const& move : moves)
     {
-        char x = static_cast<char>(move.start().x());
-        std::memcpy(buffer_ + index++, &x, 1);
+        char start_x = static_cast<char>(move.start().x());
+        std::memcpy(buffer_ + index++, &start_x, 1);
 
-        char y = static_cast<char>(move.start().y());
-        std::memcpy(buffer_ + index++, &y, 1);
+        char start_y = static_cast<char>(move.start().y());
+        std::memcpy(buffer_ + index++, &start_y, 1);
 
         char n = static_cast<char>(move.number());
         std::memcpy(buffer_ + index++, &n, 1);
 
-        x = static_cast<char>(move.end().x());
-        std::memcpy(buffer_ + index++, &x, 1);
+        char end_x = static_cast<char>(move.end().x());
+        std::memcpy(buffer_ + index++, &end_x, 1);
 
-        y = static_cast<char>(move.end().y());
-        std::memcpy(buffer_ + index++, &y, 1);
+        char end_y = static_cast<char>(move.end().y());
+        std::memcpy(buffer_ + index++, &end_y, 1);
+
+		std::cout << move.number() << "@(" << move.start().x() << "," << move.start().y() << ")->(" << move.end().x() << "," << move.end().y() << ")" << std::endl;
     }
+
+	std::cout << std::endl;
 
     return send(buffer_, 3 + 1 + 5 * moves.size());
 }
@@ -163,7 +173,7 @@ int Client::handle_set(int bytes_read)
     lines_ = buffer_[bytes_read++];
     columns_ = buffer_[bytes_read++];
 
-    std::cout << lines_ << " " << columns_ << std::endl;
+    std::cout << "lines: " << lines_ << ", columns: " << columns_ << std::endl;
 
     // Initialize map
     switch (METHOD)
@@ -190,7 +200,7 @@ int Client::handle_hum(int bytes_read)
     // Get home number
     int n = buffer_[bytes_read++];
 
-    std::cout << n << std::endl;
+    std::cout << "houses: " << n << std::endl;
 
     while (n > 0)
     {
@@ -198,7 +208,7 @@ int Client::handle_hum(int bytes_read)
         const int16_t x = buffer_[bytes_read++];
         const int16_t y = buffer_[bytes_read++];
 
-        std::cout << x << " " << y << std::endl;
+        std::cout << "(" << x << "," << y << ")" << std::endl;
 
         // Update map
         //map_->add_human(x, y, 0);
@@ -215,7 +225,7 @@ int Client::handle_hme(int bytes_read)
     const int16_t x = buffer_[bytes_read++];
     const int16_t y = buffer_[bytes_read++];
 
-    std::cout << x << " " << y << std::endl;
+	std::cout << "starting point: (" << x << "," << y << ")" << std::endl;
 
     starting_point_ = Point(x, y);
 
@@ -227,9 +237,7 @@ int Client::handle_map(int bytes_read)
     // Get number of updates
     int n = buffer_[bytes_read++];
 
-    std::cout << n << std::endl;
-
-    std::cout << "x\ty\th\tv\tw" << std::endl;
+    std::cout << "updates: " << n << std::endl;
 
     const int initial_bytes_read = bytes_read;
     const int initial_n = n;
@@ -242,8 +250,6 @@ int Client::handle_map(int bytes_read)
         const int16_t h = buffer_[bytes_read++];
         const int16_t v = buffer_[bytes_read++];
         const int16_t w = buffer_[bytes_read++];
-
-        std::cout << x << "\t" << y << "\t" << h << "\t" << v << "\t" << w << std::endl;
 
         // Get gentil species
         if (v > 0 && Point(x, y) == starting_point_)
@@ -270,15 +276,23 @@ int Client::handle_map(int bytes_read)
         if (h > 0)
         {
             map_->add_human(x, y, h);
+
+			std::cout << "H" << h;
         }
         else if (v > 0)
         {
             first_ ? map_->add_gentil(x, y, v) : map_->add_vilain(x, y, v);
+
+			first_ ? std::cout << "G" << v : std::cout << "V" << v;
         }
         else if (w > 0)
         {
             first_ ? map_->add_vilain(x, y, w) : map_->add_gentil(x, y, w);
+
+			first_ ? std::cout << "V" << w : std::cout << "G" << w;
         }
+
+		std::cout << "@(" << x << "," << y << ")" << std::endl;
 
         --n;
     }
@@ -293,12 +307,7 @@ int Client::handle_upd(int bytes_read)
     // Get number of updates
     int n = buffer_[bytes_read++];
 
-    std::cout << n << std::endl;
-
-    if (n > 0)
-    {
-        std::cout << "x\ty\th\tv\tw" << std::endl;
-    }
+	std::cout << "updates: " << n << std::endl;
 
     while (n > 0)
     {
@@ -309,25 +318,33 @@ int Client::handle_upd(int bytes_read)
         const int16_t v = buffer_[bytes_read++];
         const int16_t w = buffer_[bytes_read++];
 
-        std::cout << x << "\t" << y << "\t" << h << "\t" << v << "\t" << w << std::endl;
-
         // Update map
-        if (h > 0)
-        {
-            map_->add_human(x, y, h);
-        }
-        else if (v > 0)
-        {
-            first_ ? map_->add_gentil(x, y, v) : map_->add_vilain(x, y, v);
-        }
-        else if (w > 0)
-        {
-            first_ ? map_->add_vilain(x, y, w) : map_->add_gentil(x, y, w);
-        }
+		if (h > 0)
+		{
+			map_->add_human(x, y, h);
+
+			std::cout << "H" << h;
+		}
+		else if (v > 0)
+		{
+			first_ ? map_->add_gentil(x, y, v) : map_->add_vilain(x, y, v);
+
+			first_ ? std::cout << "G" << v : std::cout << "V" << v;
+		}
+		else if (w > 0)
+		{
+			first_ ? map_->add_vilain(x, y, w) : map_->add_gentil(x, y, w);
+
+			first_ ? std::cout << "V" << w : std::cout << "G" << w;
+		}
 		else
 		{
 			map_->remove_group(x, y);
+
+			std::cout << "0";
 		}
+
+		std::cout << "@(" << x << "," << y << ")" << std::endl;
 
         --n;
     }

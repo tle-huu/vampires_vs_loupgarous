@@ -1,12 +1,21 @@
 #include "State.h"
 
 #include <iostream>
-#include <utility>		/* std::pair */
+#include <utility>		/* std::pair, std::move */
 #include <functional>	/* std::function */
 
 #include "utils.h"
 #include "Point.h"
 #include "Group.h"
+
+State::State(State &&state)
+{
+	m_map = state.m_map;
+	m_turn = state.m_turn;
+	m_chance = state.m_chance;
+	m_proba = state.m_proba;
+	state.m_map = nullptr;
+}
 
 std::vector<Action> State::actions() const
 {
@@ -133,7 +142,6 @@ State State::result(Action const& action) const
 {
 	// Clone map
 	Map *map = m_map->clone();
-	std::cout << "cloning in state result, id = " << map->id << std::endl;
 
 	// Apply action to the map
 	map->result(action);
@@ -173,7 +181,6 @@ std::vector<State> State::successors() const
 		{
 			// Clone map
 			Map *map = m_map->clone();
-			std::cout << "cloning in state successors, id = " << map->id << std::endl;
 
 			// Remove battles
 			map->remove_battles();
@@ -187,7 +194,7 @@ std::vector<State> State::successors() const
 			}
 
 			// Add state in the vector
-			res.push_back(State(map, m_turn, false, proba));
+			res.emplace_back(map, m_turn, false, proba);
 		};
 
 		// Add every possible state
@@ -209,7 +216,7 @@ std::vector<State> State::successors() const
 	{
 		for (Action const& action : actions())
 		{
-			res.push_back(result(action));
+			res.emplace_back(result(action));
 		}
 	}
 
