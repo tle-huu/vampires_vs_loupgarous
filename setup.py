@@ -1,7 +1,7 @@
 from distutils.core import setup, Extension
 
 module = Extension('algo', 
-                   sources = ['algo.cpp', 
+                   sources = ['src/algo.cpp', 
                               'src/utils.cpp', 
                               'src/Point.cpp', 
                               'src/Group.cpp', 

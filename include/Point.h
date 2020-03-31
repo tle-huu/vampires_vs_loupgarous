@@ -1,5 +1,5 @@
-#ifndef POINT_H
-#define POINT_H
+#ifndef Point_h_INCLUDED
+#define Point_h_INCLUDED
 
 #include <stdint.h> 	/* int16_t */
 #include <string>
@@ -35,4 +35,4 @@ bool operator==(Point const& point1, Point const& point2);
  */
 int16_t distance(Point const& point1, Point const& point2);
 
-#endif // POINT_H
+#endif // Point_h_INCLUDED

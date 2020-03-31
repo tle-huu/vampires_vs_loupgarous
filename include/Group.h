@@ -1,5 +1,5 @@
-#ifndef GROUP_H
-#define GROUP_H
+#ifndef Group_h_INCLUDED
+#define Group_h_INCLUDED
 
 #include <stdint.h> 	/* int16_t */
 
@@ -14,8 +14,12 @@ public:
 
     Group(Point position, int16_t number) : m_position(position), m_number(number) {}
 
+    virtual ~Group() {}
+
     Point position() const { return m_position; }
     void position(Point position) { m_position = position; }
+    int16_t pos_x() const { return m_position.x(); }
+    int16_t pos_y() const { return m_position.y(); }
     int16_t number() const { return m_number; }
     void number(int16_t n) { m_number = n; }
     void add_number(int16_t n) { m_number += n; }
@@ -48,7 +52,7 @@ public:
 
     Gentil(Point position, int16_t number) : Group(position, number) {}
 
-    virtual char type() const { return 'G'; }
+    char type() const { return 'G'; }
 };
 
 /**
@@ -60,7 +64,7 @@ public:
 
     Vilain(Point position, int16_t number) : Group(position, number) {}
 
-    virtual char type() const { return 'V'; }
+    char type() const { return 'V'; }
 };
 
 /**
@@ -72,7 +76,7 @@ public:
 
     Human(Point position, int16_t number) : Group(position, number) {}
 
-    virtual char type() const { return 'H'; }
+    char type() const { return 'H'; }
 };
 
 /**
@@ -91,7 +95,7 @@ public:
     char defenders() const { return m_defenders; }
     int16_t number_def() const { return m_number; }
 
-    virtual char type() const { return 'B'; }
+    char type() const { return 'B'; }
 
 
 private:
@@ -101,4 +105,4 @@ private:
 	int16_t m_number_att;
 };
 
-#endif // GROUP_H
+#endif // Group_h_INCLUDED

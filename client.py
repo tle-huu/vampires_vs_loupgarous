@@ -265,8 +265,6 @@ class Client:
         self.start_game()
     
     def start_game(self):
-        counter = 0 # for testing
-        
         # Play the game
         while self.running:
             # Receive data from server to update map
@@ -278,12 +276,10 @@ class Client:
             
             # Get next move from C++ algo
             map_algo = self.map_for_algo()
-            move = get_move(map_algo, counter) # counter is here for testing
+            move = get_move(map_algo)
             msg = self.decode_move(move)
-            counter += 1                      # for testing
             
             # Send player's move to server
-            time.sleep(2) # for testing
             self.client_socket.send(msg)
 
 # Create and connect a client to game server

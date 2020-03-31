@@ -1,20 +1,15 @@
-#include "../include/utils.h"
+#include "utils.h"
 
 #include <stdint.h>		/* int16_t */
 #include <stdlib.h>     /* atoi */
 #include <sstream>
-#include <string>
 #include <cstring>      /* std::memset */
-#include <vector>
-#include <functional>   /* std::function */
-#include <Python.h>
-
-#include "Map.h"
+//#include <Python.h>
 
 char* to_c_string(std::string str)
 {
     char* cstr = new char[str.size() + 1];
-    strcpy(cstr, str.c_str());
+    strcpy_s(cstr, sizeof(cstr), str.c_str());
     return cstr;
 }
 
@@ -28,7 +23,7 @@ std::string int_to_string(int i)
 int binomial_coef(int n, int k)
 {
     int *C = new int[k + 1];
-    std::memset(C, 0, sizeof(C));
+    std::memset(C, 0, (k + 1) * sizeof(int));
     C[0] = 1;
     for (int i = 1; i <= n; ++i)
     {
@@ -44,35 +39,31 @@ int binomial_coef(int n, int k)
 
 void nested_loops(int n, int *maxes, std::function<void(int, int*)> &lambda)
 {
-    int *indices = new int[n];
-    std::memset(indices, 0, sizeof(indices));
-    
-    std::function<void()> loop;
-    loop = [&n, &maxes, &indices, &lambda, &loop] () -> void
-    {
-        lambda(n, indices);
+	int *indices = new int[n];
+	std::memset(indices, 0, n * sizeof(int));
 
-        for (int i = 0; i < n; ++i)
-        {
-            if (indices[i] == maxes[i] - 1)
-            {
-                indices[i] = 0;
-            }
-            else
-            {
-                ++indices[i];
-                loop();
-                break;
-            }
-        }
-    };
+	int current = 0;
+	while (indices[n - 1] < maxes[n - 1])
+	{
+		lambda(n, indices);
+		++indices[current];
+		while (indices[current] == maxes[current])
+		{
+			if (current == n - 1)
+			{
+				break;
+			}
+			indices[current] = 0;
+			++indices[++current];
+		}
+		current = 0;
+	}
 
-    loop();
-
-    delete[] indices;
+	// Free memory
+	delete[] indices;
 }
 
-long pyObject_to_long(PyObject *py_long)
+/*long pyObject_to_long(PyObject *py_long)
 {
     if (!PyLong_Check(py_long))
     {
@@ -178,4 +169,4 @@ bool pyObject_to_map(PyObject *py_map, Map *&map)
     }
 
     return true;
-}
+}*/

@@ -1,8 +1,4 @@
-#include "../include/Group.h"
-
-#include <stdint.h> 	/* int16_t */
-
-#include "../include/Point.h"
+#include "Group.h"
 
 bool operator==(Group const& group1, Group const& group2)
 {

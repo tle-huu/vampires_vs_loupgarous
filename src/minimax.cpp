@@ -1,12 +1,19 @@
-#include "../include/minimax.h"
+#include "minimax.h"
 
-#include <stdint.h>     /* int16_t */
+#include <iostream>
 #include <vector>
 #include <math.h>		/* round */
 
-#include "../include/utils.h"
-#include "../include/Action.h"
-#include "../include/State.h"
+#include "utils.h"
+
+Action get_best_action(Map *map, int16_t max_depth)
+{
+    // Create initial state
+    State origin(map);
+
+    // Get action
+    return expect_minimax_alphabeta(&origin, max_depth);
+}
 
 Action minimax(State *origin, int16_t max_depth)
 {

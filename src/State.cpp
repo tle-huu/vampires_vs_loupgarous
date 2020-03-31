@@ -1,27 +1,139 @@
-#include "../include/State.h"
+#include "State.h"
 
-#include <stdint.h>		/* int16_t */
-#include <vector>
+#include <iostream>
 #include <utility>		/* std::pair */
 #include <functional>	/* std::function */
 
-#include "../include/utils.h"
-#include "../include/Point.h"
-#include "../include/Group.h"
-#include "../include/Map.h"
-#include "../include/Action.h"
+#include "utils.h"
+#include "Point.h"
+#include "Group.h"
 
 std::vector<Action> State::actions() const
 {
+	// Initialize vector
 	std::vector<Action> res;
-	//TODO Generate all possible actions from a state
+
+	// Get all positions from groups that can move
+	int groups;
+	int n;
+	int *maxes = 0;
+	std::vector<Point> points;
+	if (m_turn)
+	{
+		std::vector<Gentil> gentils = m_map->gentils();
+		groups = gentils.size();
+		n = 3 * groups;
+		maxes = new int[n];
+		for (int i = 0; i < n; ++i)
+		{
+			if (i < groups)
+			{
+				points.push_back(gentils[i].position());
+				maxes[i] = gentils[i].number();
+			}
+			else
+			{
+				maxes[i] = 3;
+			}
+		}
+	}
+	else
+	{
+		std::vector<Vilain> vilains = m_map->vilains();
+		groups = vilains.size();
+		n = 3 * groups;
+		maxes = new int[n];
+		for (int i = 0; i < n; ++i)
+		{
+			if (i < groups)
+			{
+				points.push_back(vilains[i].position());
+				maxes[i] = vilains[i].number();
+			}
+			else
+			{
+				maxes[i] = 3;
+			}
+		}
+	}
+
+	// Set lambda to generate every possible action
+	std::function<void(int, int*)> lambda = [this, &res, &groups, &points] (int n, int *arr) -> void
+	{
+		// Initialize action
+		Action action;
+
+		// Set validation variables
+		bool valid = true;
+		std::vector<Point> start_points;
+
+		// For each group
+		for (int i = 0; i < groups; ++i)
+		{
+			// Get start point
+			Point start_point = points[i];
+			int16_t start_x = start_point.x();
+			int16_t start_y = start_point.y();
+
+			// Get number of units moving
+			int16_t number = arr[i] + 1;
+
+			// Get end point
+			int16_t end_x = start_x + arr[i + groups] - 1;
+			int16_t end_y = start_y + arr[i + 2 * groups] - 1;
+			Point end_point(end_x, end_y);
+
+			// Check if the group is actually moving
+			if (start_point == end_point)
+			{
+				// Invalidate action if this action has already been generated
+				if (number > 1)
+				{
+					valid = false;
+					break;
+				}
+			}
+			else
+			{
+				// Invalidate action if end point is also a start point
+				// or if end point is not in map bounds
+				if (find_element<Point>(start_points, end_point) || !m_map->in_bounds(end_point))
+				{
+					valid = false;
+					break;
+				}
+
+				// Update start points vector
+				start_points.push_back(start_point);
+
+				// Add move in action
+				Move move(start_x, start_y, number, end_x, end_y);
+				action.add_move(move);
+			}
+		}
+		
+		// Add action in the vector
+		if (valid && !action.empty())
+		{
+			res.push_back(action);
+		}
+	};
+	
+	// Add every possible action
+	nested_loops(n, maxes, lambda);
+
+	// Free memory
+	delete[] maxes;
+	
+	// Return actions
 	return res;
 }
 
 State State::result(Action const& action) const
 {
-	// Copy map
-	Map *map = copy_map(m_map);
+	// Clone map
+	Map *map = m_map->clone();
+	std::cout << "cloning in state result, id = " << map->id << std::endl;
 
 	// Apply action to the map
 	map->result(action);
@@ -59,8 +171,9 @@ std::vector<State> State::successors() const
 		// Set lambda to generate every possible state
 		std::function<void(int, int*)> lambda = [this, &outcomes, &res] (int n, int *arr) -> void
 		{
-			// Copy map
-			Map *map = copy_map(m_map);
+			// Clone map
+			Map *map = m_map->clone();
+			std::cout << "cloning in state successors, id = " << map->id << std::endl;
 
 			// Remove battles
 			map->remove_battles();
@@ -82,6 +195,13 @@ std::vector<State> State::successors() const
 
 		// Free memory
 		delete[] maxes;
+		for (int i = 0; i < n; ++i)
+		{
+			for (std::pair<Group*, double> &pair : outcomes[i])
+			{
+				delete pair.first;
+			}
+		}
 	}
 
 	// If it's a max/min node
@@ -95,26 +215,4 @@ std::vector<State> State::successors() const
 
 	// Return states
 	return res;
-}
-
-Map* copy_map(Map *map)
-{
-	Map *copy = 0;
-	switch (METHOD)
-	{
-		// MapVectors
-		case 0:
-			copy = new MapVectors;
-			break;
-
-		// MapGrid
-		case 1:
-			copy = new MapGrid;
-			break;
-
-		default:
-			break;
-	}
-	*copy = *map;
-	return copy;
 }

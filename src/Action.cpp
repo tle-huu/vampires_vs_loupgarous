@@ -1,10 +1,6 @@
-#include "../include/Action.h"
+#include "Action.h"
 
-#include <string>
-#include <vector>
-
-#include "../include/utils.h"
-#include "../include/Point.h"
+#include "utils.h"
 
 std::string Move::to_string() const
 {
@@ -13,7 +9,7 @@ std::string Move::to_string() const
 
 std::string Action::to_string() const
 {
-    std::string str = int_to_string(moves_number()) + "x";
+    std::string str = int_to_string(m_moves.size()) + "x";
     for (Move const& move : m_moves)
     {
         str = str + move.to_string() + "x";

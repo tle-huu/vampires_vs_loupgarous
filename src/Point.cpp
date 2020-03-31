@@ -1,9 +1,6 @@
-#include "../include/Point.h"
+#include "Point.h"
 
-#include <stdint.h> 	/* int16_t */
-#include <string>
-
-#include "../include/utils.h"
+#include "utils.h"
 
 std::string Point::to_string() const
 {

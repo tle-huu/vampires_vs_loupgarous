@@ -1,7 +1,9 @@
-#ifndef MAP_H
-#define MAP_H
+#ifndef Map_h_INCLUDED
+#define Map_h_INCLUDED
 
 #include <stdint.h>     /* int16_t */
+#include <string>
+#include <iostream>
 #include <vector>
 #include <utility>      /* std::pair */
 
@@ -19,7 +21,14 @@ class Map
 {
 public:
 
-    Map(int16_t lines = 0, int16_t columns = 0) : m_lines(lines), m_columns(columns) {}
+	static int counter_id;
+	int id;
+
+	Map(int16_t lines = 0, int16_t columns = 0) : m_lines(lines), m_columns(columns), id(counter_id++) { std::cout << "id creation: " << id << std::endl; }
+
+    virtual ~Map() {}
+
+	virtual Map* clone() = 0;
 
     int16_t lines() const { return m_lines; }
     int16_t columns() const { return m_columns; }
@@ -33,6 +42,8 @@ public:
     virtual void add_vilain(int16_t x, int16_t y, int16_t n) = 0;
     virtual void add_human(int16_t x, int16_t y, int16_t n) = 0;
     virtual void add_group(Group *group) = 0; // not for battle groups
+
+	virtual void remove_group(int16_t x, int16_t y) = 0;
 
     int16_t heuristic() const;
     int16_t utility() const;
@@ -48,12 +59,15 @@ public:
 
     bool in_bounds(Point const& point) const;
 
+	virtual std::string to_string() const = 0;
+
 
 protected:
 
     char opponent(char type) { return type == 'G' ? 'V' : 'G'; }
 
     virtual int16_t gentils_number() const = 0;
+    virtual int16_t vilains_number() const = 0;
 
     virtual void result(Move const& move) = 0;
 
@@ -62,6 +76,8 @@ protected:
     int16_t m_lines;
     int16_t m_columns;
 };
+
+std::ostream& operator<<(std::ostream &out, Map *map);
 
 /**
  * An implementation of Map represented by vectors of groups
@@ -72,29 +88,36 @@ public:
 
     MapVectors(int16_t lines = 0, int16_t columns = 0) : Map(lines, columns) {}
 
-    virtual std::vector<Gentil> gentils() const { return m_gentils; }
-    virtual std::vector<Vilain> vilains() const { return m_vilains; }
-    virtual std::vector<Human> humans() const { return m_humans; }
-    virtual std::vector<Battle> battles() const { return m_battles; }
+	MapVectors* clone() { return new MapVectors(*this); }
 
-    virtual void add_gentil(int16_t x, int16_t y, int16_t n) { m_gentils.push_back(Gentil(Point(x, y), n)); }
-    virtual void add_vilain(int16_t x, int16_t y, int16_t n) { m_vilains.push_back(Vilain(Point(x, y), n)); }
-    virtual void add_human(int16_t x, int16_t y, int16_t n) { m_humans.push_back(Human(Point(x, y), n)); }
-    virtual void add_group(Group *group);
+    std::vector<Gentil> gentils() const { return m_gentils; }
+    std::vector<Vilain> vilains() const { return m_vilains; }
+    std::vector<Human> humans() const { return m_humans; }
+    std::vector<Battle> battles() const { return m_battles; }
 
-    virtual bool has_battle() const { return !m_battles.empty(); }
-    virtual void remove_battles() { m_battles.clear(); }
+    void add_gentil(int16_t x, int16_t y, int16_t n) { m_gentils.push_back(Gentil(Point(x, y), n)); }
+    void add_vilain(int16_t x, int16_t y, int16_t n) { m_vilains.push_back(Vilain(Point(x, y), n)); }
+    void add_human(int16_t x, int16_t y, int16_t n) { m_humans.push_back(Human(Point(x, y), n)); }
+    void add_group(Group *group);
 
-    virtual bool is_terminal() const { return (m_gentils.size() == 0) || (m_vilains.size() == 0); }
+	void remove_group(int16_t x, int16_t y);
+
+    bool has_battle() const { return !m_battles.empty(); }
+    void remove_battles() { m_battles.clear(); }
+
+    bool is_terminal() const { return (m_gentils.size() == 0) || (m_vilains.size() == 0); }
+
+	std::string to_string() const;
 
 
 private:
 
-    virtual int16_t gentils_number() const;
+    int16_t gentils_number() const;
+    int16_t vilains_number() const;
 
-    virtual void result(Move const& move);
+    void result(Move const& move);
 
-    virtual void end_battles();
+    void end_battles();
 
     Group* get_group(Point const& pos);
     void add_battle(Point position, char attackers, int16_t number_att, char defenders, int16_t number_def);
@@ -122,20 +145,26 @@ public:
 
     virtual ~MapGrid();
 
-    virtual std::vector<Gentil> gentils() const;
-    virtual std::vector<Vilain> vilains() const;
-    virtual std::vector<Human> humans() const;
-    virtual std::vector<Battle> battles() const;
+	MapGrid* clone() { return new MapGrid(*this); }
 
-    virtual void add_gentil(int16_t x, int16_t y, int16_t n);
-    virtual void add_vilain(int16_t x, int16_t y, int16_t n);
-    virtual void add_human(int16_t x, int16_t y, int16_t n);
-    virtual void add_group(Group *group);
+    std::vector<Gentil> gentils() const;
+    std::vector<Vilain> vilains() const;
+    std::vector<Human> humans() const;
+    std::vector<Battle> battles() const;
 
-    virtual bool has_battle() const;
-    virtual void remove_battles();
+    void add_gentil(int16_t x, int16_t y, int16_t n) { set_group(x, y, 'G', n); }
+    void add_vilain(int16_t x, int16_t y, int16_t n) { set_group(x, y, 'V', n); }
+    void add_human(int16_t x, int16_t y, int16_t n) { set_group(x, y, 'H', n); }
+    void add_group(Group *group);
 
-    virtual bool is_terminal() const;
+	void remove_group(int16_t x, int16_t y) { m_grid[y][x].type = 'E'; }
+
+    bool has_battle() const;
+    void remove_battles();
+
+    bool is_terminal() const;
+
+	std::string to_string() const;
 
 
 private:
@@ -154,11 +183,14 @@ private:
         int16_t number_att;     // number of units in the attacking group
     };
 
-    virtual int16_t gentils_number() const;
+	MapGrid(MapGrid const& map);
 
-    virtual void result(Move const& move);
+    int16_t gentils_number() const;
+    int16_t vilains_number() const;
 
-    virtual void end_battles();
+    void result(Move const& move);
+
+    void end_battles();
 
     char get_type(int16_t x, int16_t y) const { return m_grid[y][x].type; }
     int16_t get_number(int16_t x, int16_t y, bool def = true) const { return def ? m_grid[y][x].number : m_grid[y][x].number_att; }
@@ -167,12 +199,11 @@ private:
     void set_group(int16_t x, int16_t y, char type, int16_t n);
     void set_battle(int16_t x, int16_t y, char att, int16_t number_att);
     void add_attackers(int16_t x, int16_t y, int16_t n) { m_grid[y][x].number_att += n; }
-    char get_att(int16_t x, int16_t y) const { return m_grid[y][x].att; }
-    char get_def(int16_t x, int16_t y) const { return m_grid[y][x].def; }
-    void remove_group(int16_t x, int16_t y) { m_grid[y][x].type = 'E'; }
+	char get_att(int16_t x, int16_t y) const { return m_grid[y][x].att; }
+	char get_def(int16_t x, int16_t y) const { return m_grid[y][x].def; }
 
     // A grid of Square to represent the map
     Square **m_grid;
 };
 
-#endif // MAP_H
+#endif // Map_h_INCLUDED

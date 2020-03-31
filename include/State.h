@@ -1,8 +1,9 @@
-#ifndef STATE_H
-#define STATE_H
+#ifndef State_h_INCLUDED
+#define State_h_INCLUDED
 
 #include <stdint.h>     /* int16_t */
 #include <vector>
+#include <iostream>
 
 #include "Map.h"
 #include "Action.h"
@@ -16,9 +17,7 @@ public:
 
     State(Map *map, bool turn = true, bool chance = false, double proba = 1.0) : m_map(map), m_turn(turn), m_chance(chance), m_proba(proba) {}
 
-    ~State() { delete m_map; }
-
-    Map* map() const { return m_map; }
+	virtual ~State() { std::cout << "id delete: " << m_map->id << std::endl; delete m_map; }
     
     bool is_max() const { return m_turn; }
     bool is_chance() const { return m_chance; }
@@ -44,11 +43,4 @@ private:
     double m_proba;
 };
 
-/**
- * Copy a map implementation
- * @param map The map to copy
- * @return The copy
- */
-Map* copy_map(Map *map);
-
-#endif // STATE_H
+#endif // State_h_INCLUDED

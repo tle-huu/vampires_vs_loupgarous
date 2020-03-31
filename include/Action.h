@@ -1,5 +1,5 @@
-#ifndef ACTION_H
-#define ACTION_H
+#ifndef Action_h_INCLUDED
+#define Action_h_INCLUDED
 
 #include <stdint.h>     /* int16_t */
 #include <string>
@@ -38,12 +38,11 @@ class Action
 public:
 
     Action() {}
-    Action(Move move) { add_move(move); }
 
     std::vector<Move> moves() const { return m_moves; }
 
     void add_move(Move move) { m_moves.push_back(move); }
-    int moves_number() const { return m_moves.size(); }
+    bool empty() const { return (m_moves.size() == 0); }
 
     std::string to_string() const;
     char* to_cstring() const;
@@ -54,4 +53,4 @@ private:
     std::vector<Move> m_moves;
 };
 
-#endif // ACTION_H
+#endif // Action_h_INCLUDED

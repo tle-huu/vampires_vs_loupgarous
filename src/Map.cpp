@@ -1,16 +1,13 @@
-#include "../include/Map.h"
+#include "Map.h"
 
-#include <stdint.h>     /* int16_t */
-#include <vector>
-#include <utility>		/* std::pair */
+#include <iostream>
 #include <math.h>		/* round, pow */
 
-#include "../include/utils.h"
-#include "../include/Point.h"
-#include "../include/Group.h"
-#include "../include/Action.h"
+#include "utils.h"
 
-int16_t METHOD = 0;
+int16_t METHOD = 1;
+
+int Map::counter_id = 0;
 
 int16_t Map::heuristic() const
 {
@@ -21,7 +18,18 @@ int16_t Map::heuristic() const
 
 int16_t Map::utility() const
 {
-    return gentils_number() + heuristic();
+    if (is_terminal())
+    {
+    	if (gentils_number() == 0)
+    	{
+    		return INT16_MIN;
+    	}
+    	else // vilains_number() == 0
+    	{
+    		return INT16_MAX;
+    	}
+    }
+    return gentils_number() - vilains_number() + heuristic();
 }
 
 std::vector<std::pair<Group*, double> > Map::battle_outcomes(Battle const& battle) const
@@ -134,6 +142,12 @@ bool Map::in_bounds(Point const& point) const
 	return true;
 }
 
+std::ostream& operator<<(std::ostream &out, Map *map)
+{
+	out << map->to_string();
+	return out;
+}
+
 void MapVectors::add_group(Group *group)
 {
 	char type = group->type();
@@ -143,9 +157,40 @@ void MapVectors::add_group(Group *group)
 	}
 	else if (type == 'H')
 	{
-		add_human(group->position().x(), group->position().y(), group->number());
+		add_human(group->pos_x(), group->pos_y(), group->number());
 	}
-	delete group;
+}
+
+void MapVectors::remove_group(int16_t x, int16_t y)
+{
+	for (Gentil &gentil : m_gentils)
+	{
+		if (gentil.pos_x() == x && gentil.pos_y() == y)
+		{
+			remove_gentil(gentil);
+		}
+	}
+
+	for (Vilain &vilain : m_vilains)
+	{
+		if (vilain.pos_x() == x && vilain.pos_y() == y)
+		{
+			remove_vilain(vilain);
+		}
+	}
+
+	for (Human &human : m_humans)
+	{
+		if (human.pos_x() == x && human.pos_y() == y)
+		{
+			remove_human(human);
+		}
+	}
+}
+
+std::string MapVectors::to_string() const
+{
+	return "Not implemented yet";
 }
 
 int16_t MapVectors::gentils_number() const
@@ -154,6 +199,16 @@ int16_t MapVectors::gentils_number() const
     for (Gentil const& gentil : m_gentils)
     {
         value += gentil.number();
+    }
+    return value;
+}
+
+int16_t MapVectors::vilains_number() const
+{
+	int16_t value = 0;
+    for (Vilain const& vilain : m_vilains)
+    {
+        value += vilain.number();
     }
     return value;
 }
@@ -304,15 +359,15 @@ void MapVectors::end_battles()
 		char def_type = battle.defenders();
 		if ( (def_type == 'G' || def_type == 'V') && (2 * battle.number_def() >= 3 * battle.number_att()) )
 		{
-			remove_battle(battle);
 			if (def_type == 'G')
 			{
-				add_gentil(battle.position().x(), battle.position().y(), battle.number_def());
+				add_gentil(battle.pos_x(), battle.pos_y(), battle.number_def());
 			}
 			else
 			{
-				add_vilain(battle.position().x(), battle.position().y(), battle.number_def());
+				add_vilain(battle.pos_x(), battle.pos_y(), battle.number_def());
 			}
+			remove_battle(battle);
 		}
 	}
 }
@@ -444,11 +499,11 @@ MapGrid::MapGrid(int16_t lines, int16_t columns)
 
 MapGrid::~MapGrid()
 {
-	for (int16_t i = 0; i < m_lines; ++i)
+	/*for (int16_t i = 0; i < m_lines; ++i)
 	{
 		delete[] m_grid[i];
 	}
-	delete[] m_grid;
+	delete[] m_grid;*/
 }
 
 std::vector<Gentil> MapGrid::gentils() const
@@ -515,25 +570,9 @@ std::vector<Battle> MapGrid::battles() const
 	return res;
 }
 
-void MapGrid::add_gentil(int16_t x, int16_t y, int16_t n)
-{
-	set_group(x, y, 'G', n);
-}
-
-void MapGrid::add_vilain(int16_t x, int16_t y, int16_t n)
-{
-	set_group(x, y, 'V', n);
-}
-
-void MapGrid::add_human(int16_t x, int16_t y, int16_t n)
-{
-	set_group(x, y, 'H', n);
-}
-
 void MapGrid::add_group(Group *group)
 {
-	set_group(group->position().x(), group->position().y(), group->type(), group->number());
-	delete group;
+	set_group(group->pos_x(), group->pos_y(), group->type(), group->number());
 }
 
 bool MapGrid::has_battle() const
@@ -585,6 +624,48 @@ bool MapGrid::is_terminal() const
 	return (gentils_counter == 0) || (vilains_counter == 0);
 }
 
+std::string MapGrid::to_string() const
+{
+	std::string str = "Map:\n";
+	for (int16_t y = 0; y < m_lines; ++y)
+	{
+		for (int16_t x = 0; x < m_columns; ++x)
+		{
+			if (get_type(x, y) != 'E')
+			{
+				str = str + get_type(x, y) + int_to_string(get_number(x, y));
+			}
+			else
+			{
+				str = str + "0";
+			}
+			str = str + "\t";
+		}
+		str = str + "\n";
+	}
+	return str;
+}
+
+MapGrid::MapGrid(MapGrid const& map)
+{
+	// Initialize size
+	m_lines = map.lines();
+	m_columns = map.columns();
+	id = counter_id++;
+	std::cout << "id cloning creation: " << id << std::endl;
+
+	// Initialize grid
+	m_grid = new Square*[m_lines];
+	for (int16_t i = 0; i < m_lines; ++i)
+	{
+		m_grid[i] = new Square[m_columns];
+		for (int16_t j = 0; j < m_columns; ++j)
+		{
+			m_grid[i][j] = Square{map.m_grid[i][j].type, map.m_grid[i][j].number};
+		}
+	}
+}
+
 int16_t MapGrid::gentils_number() const
 {
 	int16_t value = 0;
@@ -593,6 +674,22 @@ int16_t MapGrid::gentils_number() const
 		for (int16_t x = 0; x < m_columns; ++x)
 		{
 			if (get_type(x, y) == 'G')
+			{
+				value += get_number(x, y);
+			}
+		}
+	}
+	return value;
+}
+
+int16_t MapGrid::vilains_number() const
+{
+	int16_t value = 0;
+    for (int16_t y = 0; y < m_lines; ++y)
+	{
+		for (int16_t x = 0; x < m_columns; ++x)
+		{
+			if (get_type(x, y) == 'V')
 			{
 				value += get_number(x, y);
 			}

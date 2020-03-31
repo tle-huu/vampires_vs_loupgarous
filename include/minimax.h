@@ -1,10 +1,19 @@
-#ifndef MINIMAX_H
-#define MINIMAX_H
+#ifndef Minimax_h_INCLUDED
+#define Minimax_h_INCLUDED
 
 #include <stdint.h>     /* int16_t */
 
 #include "Action.h"
+#include "Map.h"
 #include "State.h"
+
+/**
+ * Calculate the best action to do in a given state
+ * @param map The current state of the game
+ * @param max_depth The maximum depth of the game tree to explore
+ * @return The best action found
+ */
+Action get_best_action(Map *map, int16_t max_depth);
 
 /**
  * Find best action in a given state for a player with Minimax algorithm
@@ -76,4 +85,4 @@ Action expect_minimax_alphabeta(State *origin, int16_t max_depth);
  */
 int16_t expect_minimax_alphabeta(State *state, int16_t depth, int16_t alpha, int16_t beta);
 
-#endif // MINIMAX_H
+#endif // Minimax_h_INCLUDED

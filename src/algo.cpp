@@ -1,17 +1,12 @@
 #include <stdint.h>     /* int16_t */
 #include <iostream>
-#include <string>
-#include <cstring>
-#include <vector>
 #include <Python.h>
 
-#include "include/utils.h"
-#include "include/Point.h"
-#include "include/Group.h"
-#include "include/Map.h"
-#include "include/Action.h"
-#include "include/State.h"
-#include "include/minimax.h"
+#include "../include/utils.h"
+#include "../include/Map.h"
+#include "../include/Action.h"
+#include "../include/State.h"
+#include "../include/minimax.h"
 
 // Maximum depth of the game tree to explore
 static const int16_t MAX_DEPTH = 3;
@@ -19,38 +14,15 @@ static const int16_t MAX_DEPTH = 3;
 /**
  * Calculate the best action to do in a given state
  * @param map The current state of the game
- * @param counter (For testing purposes only)
  * @return The best action found as a string
  */
-char* get_move(Map *map, int counter)
+char* get_move(Map *map)
 {
     // Create initial state
     State origin(map);
 
     // Get action
     Action action = expect_minimax_alphabeta(&origin, MAX_DEPTH);
-
-    // For testing only
-    if (counter == 0)
-    {
-        Move move(5, 4, 3, 4, 4);
-        action.add_move(move);
-    }
-    else if (counter == 1)
-    {
-        Move move(4, 4, 4, 3, 3);
-        action.add_move(move);
-    }
-    else if (counter == 2)
-    {
-        Move move(3, 3, 4, 2, 2);
-        action.add_move(move);
-    }
-    else
-    {
-        Move move(2, 2, 5, 2, 3);
-        action.add_move(move);
-    }
 
     // Return action as a c string
     return action.to_cstring();
@@ -63,8 +35,7 @@ char* get_move(Map *map, int counter)
 static PyObject* algo_get_move(PyObject *self, PyObject *args)
 {
     PyObject *py_map;
-    int counter;
-    if (!PyArg_ParseTuple(args, "Oi", &py_map, &counter))
+    if (!PyArg_ParseTuple(args, "O", &py_map))
     {
         return NULL;
     }
@@ -73,7 +44,7 @@ static PyObject* algo_get_move(PyObject *self, PyObject *args)
     {
         return NULL;
     }
-    return (PyObject*) Py_BuildValue("s", get_move(map, counter));
+    return (PyObject*) Py_BuildValue("s", get_move(map));
 }
 
 // List of objects available in the module
