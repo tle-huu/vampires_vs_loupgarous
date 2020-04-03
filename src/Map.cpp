@@ -1,60 +1,89 @@
 #include "Map.h"
 
-#include <iostream>
 #include <math.h>		/* round, pow */
 
 #include "utils.h"
 
 int16_t METHOD = 1;
 
-int16_t Map::heuristic() const
+int16_t MAX_UTILITY = INT16_MAX;
+
+int16_t Map::heuristic(bool turn) const
 {
     int16_t value = 0;
+	int16_t gentils_humans = 0, vilains_humans = 0;
 	for (Human const& human : humans())
 	{
-		int16_t gentil_min_dist = INT16_MAX;
-		for (Gentil const& gentil : gentils())
+		int16_t gentil_min_dist = human.min_distance(gentils());
+		int16_t vilain_min_dist = human.min_distance(vilains());
+		if (turn)
 		{
-			if (human.number() <= gentil.number())
-			{
-				int16_t dist = distance(human, gentil);
-				if (dist < gentil_min_dist)
-				{
-					gentil_min_dist = dist;
-				}
-			}
+			gentil_min_dist <= vilain_min_dist ? gentils_humans += human.number() : vilains_humans += human.number();
 		}
-		int16_t vilain_min_dist = INT16_MAX;
-		for (Vilain const& vilain : vilains())
+		else
 		{
-			if (human.number() <= vilain.number())
-			{
-				int16_t dist = distance(human, vilain);
-				if (dist < vilain_min_dist)
-				{
-					vilain_min_dist = dist;
-				}
-			}
+			gentil_min_dist < vilain_min_dist ? gentils_humans += human.number() : vilains_humans += human.number();
 		}
-		gentil_min_dist <= vilain_min_dist ? value += human.number() : value -= human.number();
 	}
-    return value;
+	return gentils_humans - vilains_humans;
 }
 
-int16_t Map::utility() const
+int16_t Map::utility(bool turn) const
 {
     if (is_terminal())
     {
-    	if (gentils_number() == 0)
+		if (gentils_number() == 0)
     	{
-    		return INT16_MIN;
+			if (vilains_number() == 0)
+			{
+				return 0;
+			}
+			return -MAX_UTILITY;
     	}
     	else // vilains_number() == 0
     	{
-    		return INT16_MAX;
+			return MAX_UTILITY;
     	}
     }
-	return gentils_number() - vilains_number();// + heuristic();
+	int16_t value = heuristic(turn);
+	int16_t gentils_num = gentils_number(), vilains_num = vilains_number();
+	if (2 * gentils_num >= 3 * vilains_num)
+	{
+		value += gentils_num;
+	}
+	else if (2 * vilains_num >= 3 * gentils_num)
+	{
+		value -= vilains_num;
+	}
+	else
+	{
+		value += 2 * (gentils_number() - vilains_number());
+	}
+	return value;
+}
+
+int16_t Map::min_group_number(bool turn)
+{
+	int16_t min_number = INT16_MAX;
+	for (Human const& human : humans())
+	{
+		min_number = min(min_number, human.number());
+	}
+	if (turn)
+	{
+		for (Vilain const& vilain : vilains())
+		{
+			min_number = min(min_number, (int16_t) round(1.5 * (double) vilain.number()));
+		}
+	}
+	else
+	{
+		for (Gentil const& gentil : gentils())
+		{
+			min_number = min(min_number, (int16_t)round(1.5 * (double)gentil.number()));
+		}
+	}
+	return min_number;
 }
 
 std::vector<std::pair<Group*, double> > Map::battle_outcomes(Battle const& battle) const
@@ -69,6 +98,9 @@ std::vector<std::pair<Group*, double> > Map::battle_outcomes(Battle const& battl
 	// Set probability that the attacker wins (for E1 <= E2)
 	double P = (double) E1 / (double) (2 * E2);
 
+	// Initialize no survival probability
+	double no_survival_proba = 0;
+
 	// For a battle against humans
 	if (battle.defenders() == 'H')
 	{
@@ -76,6 +108,11 @@ std::vector<std::pair<Group*, double> > Map::battle_outcomes(Battle const& battl
 		for (int k = 0, n = E1 + E2; k <= n; ++k)
 		{
 			double proba = binomial_coef(n, k) * pow(P, k + 1) * pow(1 - P, n - k);
+			if (k == 0)
+			{
+				no_survival_proba = proba;
+				continue;
+			}
 			Group *group = 0;
 			if (battle.attackers() == 'G')
 			{
@@ -93,6 +130,10 @@ std::vector<std::pair<Group*, double> > Map::battle_outcomes(Battle const& battl
 		for (int k = 0, n = E2; k <= n; ++k)
 		{
 			double proba = binomial_coef(n, k) * pow(1 - P, k + 1) * pow(P, n - k);
+			if (k == 0)
+			{
+				proba += no_survival_proba;
+			}
 			Group *group = new Human(battle.position(), k);
 			std::pair<Group*, double> pair(group, proba);
 			res.push_back(pair);
@@ -112,6 +153,11 @@ std::vector<std::pair<Group*, double> > Map::battle_outcomes(Battle const& battl
 		for (int k = 0, n = E1; k <= n; ++k)
 		{
 			double proba = binomial_coef(n, k) * pow(P, k + 1) * pow(1 - P, n - k);
+			if (k == 0)
+			{
+				no_survival_proba = proba;
+				continue;
+			}
 			Group *group = 0;
 			if (battle.attackers() == 'G')
 			{
@@ -129,6 +175,10 @@ std::vector<std::pair<Group*, double> > Map::battle_outcomes(Battle const& battl
 		for (int k = 0, n = E2; k <= n; ++k)
 		{
 			double proba = binomial_coef(n, k) * pow(1 - P, k + 1) * pow(P, n - k);
+			if (k == 0)
+			{
+				proba += no_survival_proba;
+			}
 			Group *group = 0;
 			if (battle.defenders() == 'G')
 			{
@@ -167,14 +217,75 @@ bool Map::in_bounds(Point const& point) const
 	return true;
 }
 
+bool Map::preferable_than(Map *map) const
+{
+	// Choose the one with the biggest gentils total population
+	int16_t self_gentils_number = gentils_number();
+	int16_t other_gentils_number = map->gentils_number();
+	if (self_gentils_number != other_gentils_number)
+	{
+		return self_gentils_number > other_gentils_number;
+	}
+
+	// Choose the one with the fewest gentils groups
+	std::vector<Gentil> self_gentils = gentils();
+	std::vector<Gentil> other_gentils = map->gentils();
+	if (self_gentils.size() != other_gentils.size())
+	{
+		return self_gentils.size() < other_gentils.size();
+	}
+
+	// Choose the one minimizing the smallest distance to a human group
+	std::vector<Human> human_groups = humans();
+	int16_t self_min_dist = INT16_MAX;
+	for (Human const& human : human_groups)
+	{
+		self_min_dist = min(self_min_dist, human.min_distance(self_gentils));
+	}
+	human_groups = map->humans();
+	int16_t other_min_dist = INT16_MAX;
+	for (Human const& human : human_groups)
+	{
+		other_min_dist = min(other_min_dist, human.min_distance(other_gentils));
+	}
+	if (self_min_dist != other_min_dist)
+	{
+		return self_min_dist < other_min_dist;
+	}
+
+	// Choose the one minimizing the smallest distance to a vilain group
+	std::vector<Vilain> vilain_groups = vilains();
+	self_min_dist = INT16_MAX;
+	for (Vilain const& vilain : vilain_groups)
+	{
+		self_min_dist = min(self_min_dist, vilain.min_distance(self_gentils));
+	}
+	vilain_groups = map->vilains();
+	other_min_dist = INT16_MAX;
+	for (Vilain const& vilain : vilain_groups)
+	{
+		other_min_dist = min(other_min_dist, vilain.min_distance(other_gentils));
+	}
+	return self_min_dist < other_min_dist;
+}
+
 std::ostream& operator<<(std::ostream &out, Map *map)
 {
 	out << map->to_string();
 	return out;
 }
 
+char opponent(char type)
+{
+	return type == 'G' ? 'V' : 'G';
+}
+
 void MapVectors::add_group(Group *group)
 {
+	if (group->number() <= 0)
+	{
+		return;
+	}
 	char type = group->type();
 	if (type == 'G' || type == 'V')
 	{
@@ -436,7 +547,7 @@ Group* MapVectors::get_group(Point const& pos)
 	}
 
 	// Return a null pointer
-	return NULL;
+	return nullptr;
 }
 
 void MapVectors::add_battle(Point position, char attackers, int16_t number_att, char defenders, int16_t number_def)
@@ -597,41 +708,7 @@ std::vector<Battle> MapGrid::battles() const
 
 void MapGrid::add_group(Group *group)
 {
-	set_group(group->pos_x(), group->pos_y(), group->type(), group->number());
-}
-
-int16_t MapGrid::heuristic() const
-{
-	int16_t value = 0;
-	for (Human const& human : humans())
-	{
-		int16_t gentil_min_dist = INT16_MAX;
-		for (Gentil const& gentil : gentils())
-		{
-			if (human.number() <= gentil.number())
-			{
-				int16_t dist = distance(human, gentil);
-				if (dist < gentil_min_dist)
-				{
-					gentil_min_dist = dist;
-				}
-			}
-		}
-		int16_t vilain_min_dist = INT16_MAX;
-		for (Vilain const& vilain : vilains())
-		{
-			if (human.number() <= vilain.number())
-			{
-				int16_t dist = distance(human, vilain);
-				if (dist < vilain_min_dist)
-				{
-					vilain_min_dist = dist;
-				}
-			}
-		}
-		gentil_min_dist <= vilain_min_dist ? value += human.number() : value -= human.number();
-	}
-	return value;
+	group->number() <= 0 ? remove_group(group->pos_x(), group->pos_y()) : set_group(group->pos_x(), group->pos_y(), group->type(), group->number());
 }
 
 bool MapGrid::has_battle() const
@@ -665,38 +742,46 @@ void MapGrid::remove_battles()
 
 bool MapGrid::is_terminal() const
 {
-	int gentils_counter = 0, vilains_counter = 0;
+	bool no_gentils = true, no_vilains = true;
 	for (int16_t y = 0; y < m_lines; ++y)
 	{
 		for (int16_t x = 0; x < m_columns; ++x)
 		{
 			if (get_type(x, y) == 'G')
 			{
-				++gentils_counter;
+				no_gentils = false;
 			}
 			else if (get_type(x, y) == 'V')
 			{
-				++vilains_counter;
+				no_vilains = false;
 			}
 		}
 	}
-	return (gentils_counter == 0) || (vilains_counter == 0);
+	return (no_gentils || no_vilains);
 }
 
 std::string MapGrid::to_string() const
 {
 	std::string str = "Map:\n";
-	for (int16_t y = 0; y < m_lines; ++y)
+	for (int16_t y = -1; y < m_lines; ++y)
 	{
-		for (int16_t x = 0; x < m_columns; ++x)
+		for (int16_t x = -1; x < m_columns; ++x)
 		{
-			if (get_type(x, y) != 'E')
+			if (x < 0)
+			{
+				str = y < 0 ? str + " " : str + int_to_string(y);
+			}
+			else if (y < 0)
+			{
+				str = str + int_to_string(x);
+			}
+			else if (get_type(x, y) != 'E')
 			{
 				str = str + get_type(x, y) + int_to_string(get_number(x, y));
 			}
 			else
 			{
-				str = str + "0";
+				str = str + "-";
 			}
 			str = str + "\t";
 		}
@@ -803,7 +888,7 @@ void MapGrid::result(Move const& move)
 	}
 
 	// If it's occupied by the opponent
-	else if (dest_type == opponent(dest_type))
+	else if (dest_type == opponent(group_type))
 	{
 		// If it's a winning battle
 		if (2 * move.number() >= 3 * get_number(x, y))
@@ -823,7 +908,7 @@ void MapGrid::result(Move const& move)
 		int16_t n = get_number(x, y, false) + move.number();
 
 		// If it's a winning battle against humans
-		if ( (get_def(x, y) == 'H') && (n >= get_number(x, y)) )
+		if ((get_def(x, y) == 'H') && (n >= get_number(x, y)))
 		{
 			set_group(x, y, group_type, get_number(x, y) + n);
 		}
@@ -849,7 +934,7 @@ void MapGrid::end_battles()
 		{
 			if (get_type(x, y) == 'B')
 			{
-				if ( (get_def(x, y) == 'G' || get_def(x, y) == 'V') && (2 * get_number(x, y) >= 3 * get_number(x, y, false)) )
+				if ((get_def(x, y) == 'G' || get_def(x, y) == 'V') && (2 * get_number(x, y) >= 3 * get_number(x, y, false)))
 				{
 					set_group(x, y, get_def(x, y), get_number(x, y));
 				}

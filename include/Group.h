@@ -2,6 +2,7 @@
 #define Group_h_INCLUDED
 
 #include <stdint.h> 	/* int16_t */
+#include <vector>
 
 #include "Point.h"
 
@@ -65,6 +66,8 @@ public:
     Vilain(Point position, int16_t number) : Group(position, number) {}
 
     char type() const { return 'V'; }
+
+	int16_t min_distance(std::vector<Gentil> const& groups) const;
 };
 
 /**
@@ -77,6 +80,9 @@ public:
     Human(Point position, int16_t number) : Group(position, number) {}
 
     char type() const { return 'H'; }
+
+	int16_t min_distance(std::vector<Gentil> const& groups) const;
+	int16_t min_distance(std::vector<Vilain> const& groups) const;
 };
 
 /**

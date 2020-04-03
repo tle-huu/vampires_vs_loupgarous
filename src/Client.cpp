@@ -3,7 +3,7 @@
 #include <cstring>          /* std::memset, std::memcpy */
 #include <iostream>
 #include <algorithm>
-#include <sys/types.h>
+#include <chrono>
 
 #include "Action.h"
 #include "minimax.h"
@@ -44,12 +44,22 @@ int Client::connect() noexcept
 
 int Client::start() noexcept
 {
-    // Send player's name to the server
+    // Check if the client is connected
+	if (!connected_)
+	{
+		return EXIT_FAILURE;
+	}
+	
+	// Send player's name to the server
     send_name();
 
     // Receive first two messages to initialize the game map
     handle_data();
     handle_data();
+
+	// Create timers
+	std::chrono::high_resolution_clock::time_point t0;
+	std::chrono::high_resolution_clock::time_point t1;
 
     while (connected_)
     {
@@ -62,7 +72,11 @@ int Client::start() noexcept
         }
 
         // Send player's move to server
+		t0 = std::chrono::high_resolution_clock::now();
         send_move();
+		t1 = std::chrono::high_resolution_clock::now();
+		double duration = std::chrono::duration<double>(t1 - t0).count();
+		std::cout << "Process time: " << duration << "s" << std::endl << std::endl;
     }
 
     return EXIT_SUCCESS;
@@ -118,11 +132,9 @@ int Client::send_move() noexcept
 
         char end_y = static_cast<char>(move.end().y());
         std::memcpy(buffer_ + index++, &end_y, 1);
-
-		std::cout << move.number() << "@(" << move.start().x() << "," << move.start().y() << ")->(" << move.end().x() << "," << move.end().y() << ")" << std::endl;
     }
 
-	std::cout << std::endl;
+	std::cout << action << std::endl << std::endl;
 
     return send(buffer_, 3 + 1 + 5 * moves.size());
 }
@@ -247,14 +259,15 @@ int Client::handle_map(int bytes_read)
         // Get update data
         const int16_t x = buffer_[bytes_read++];
         const int16_t y = buffer_[bytes_read++];
-        const int16_t h = buffer_[bytes_read++];
+        bytes_read++;
         const int16_t v = buffer_[bytes_read++];
-        const int16_t w = buffer_[bytes_read++];
+        bytes_read++;
 
         // Get gentil species
         if (v > 0 && Point(x, y) == starting_point_)
         {
             first_ = true;
+			break;
         }
 
         --n;
@@ -262,6 +275,8 @@ int Client::handle_map(int bytes_read)
 
     n = initial_n;
     bytes_read = initial_bytes_read;
+
+	MAX_UTILITY = 0;
 
     while (n > 0)
     {
@@ -292,10 +307,14 @@ int Client::handle_map(int bytes_read)
 			first_ ? std::cout << "V" << w : std::cout << "G" << w;
         }
 
+		MAX_UTILITY += h + (first_ ? v : w);
+
 		std::cout << "@(" << x << "," << y << ")" << std::endl;
 
         --n;
     }
+
+	MAX_UTILITY += 1;
 
 	std::cout << std::endl << map_ << std::endl;
 

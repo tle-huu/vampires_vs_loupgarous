@@ -26,6 +26,7 @@ private:
 };
 
 bool operator==(Point const& point1, Point const& point2);
+bool operator!=(Point const& point1, Point const& point2);
 
 /**
  * Calculate distance between two points in a map

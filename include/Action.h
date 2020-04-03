@@ -3,6 +3,7 @@
 
 #include <stdint.h>     /* int16_t */
 #include <string>
+#include <iostream>
 #include <vector>
 
 #include "Point.h"
@@ -30,6 +31,8 @@ private:
     int16_t m_number;
 };
 
+std::ostream& operator<<(std::ostream &out, Move const& move);
+
 /**
  * Represents moves of a game turn
  */
@@ -52,5 +55,7 @@ private:
 
     std::vector<Move> m_moves;
 };
+
+std::ostream& operator<<(std::ostream &out, Action const& action);
 
 #endif // Action_h_INCLUDED

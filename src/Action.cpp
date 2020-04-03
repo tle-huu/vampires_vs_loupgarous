@@ -4,20 +4,31 @@
 
 std::string Move::to_string() const
 {
-	return m_start.to_string() + "x" + int_to_string(m_number) + "x" + m_end.to_string();
+	return int_to_string(m_number) + "@(" 
+		+ int_to_string(m_start.x()) + ","
+		+ int_to_string(m_start.y()) + ")->("
+		+ int_to_string(m_end.x()) + ","
+		+ int_to_string(m_end.y()) + ")";
+}
+
+std::ostream& operator<<(std::ostream &out, Move const& move)
+{
+	out << move.to_string();
+	return out;
 }
 
 std::string Action::to_string() const
 {
-    std::string str = int_to_string(m_moves.size()) + "x";
+    std::string str = "moves: " + int_to_string(m_moves.size());
     for (Move const& move : m_moves)
     {
-        str = str + move.to_string() + "x";
+        str = str + "\n" + move.to_string();
     }
     return str;
 }
 
-char* Action::to_cstring() const
+std::ostream& operator<<(std::ostream &out, Action const& action)
 {
-	return to_c_string(to_string());
+	out << action.to_string();
+	return out;
 }

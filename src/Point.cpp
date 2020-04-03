@@ -12,6 +12,11 @@ bool operator==(Point const& point1, Point const& point2)
 	return (point1.x() == point2.x()) && (point1.y() == point2.y());
 }
 
+bool operator!=(Point const& point1, Point const& point2)
+{
+	return !(point1 == point2);
+}
+
 int16_t distance(Point const& point1, Point const& point2)
 {
     return max(abs(point1.x() - point2.x()), abs(point1.y() - point2.y()));

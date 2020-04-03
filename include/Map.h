@@ -14,6 +14,8 @@
 // Map implementation : 0 for MapVectors, 1 for MapGrid
 extern int16_t METHOD;
 
+extern int16_t MAX_UTILITY;
+
 /**
  * An interface to represent a map of the game
  */
@@ -26,7 +28,7 @@ public:
 
     virtual ~Map() {}
 
-	virtual Map* clone() = 0;
+	virtual Map* clone() const = 0;
 
     int16_t lines() const { return m_lines; }
     int16_t columns() const { return m_columns; }
@@ -43,8 +45,10 @@ public:
 
 	virtual void remove_group(int16_t x, int16_t y) = 0;
 
-    virtual int16_t heuristic() const;
-    int16_t utility() const;
+    int16_t heuristic(bool turn) const;
+    int16_t utility(bool turn) const;
+
+	int16_t min_group_number(bool turn);
 
     std::vector<std::pair<Group*, double> > battle_outcomes(Battle const& battle) const;
 
@@ -57,12 +61,12 @@ public:
 
     bool in_bounds(Point const& point) const;
 
+	bool preferable_than(Map *map) const;
+
 	virtual std::string to_string() const = 0;
 
 
 protected:
-
-    char opponent(char type) { return type == 'G' ? 'V' : 'G'; }
 
     virtual int16_t gentils_number() const = 0;
     virtual int16_t vilains_number() const = 0;
@@ -77,6 +81,8 @@ protected:
 
 std::ostream& operator<<(std::ostream &out, Map *map);
 
+char opponent(char type);
+
 /**
  * An implementation of Map represented by vectors of groups
  */
@@ -87,7 +93,7 @@ public:
 	MapVectors() : Map() {}
     MapVectors(int16_t lines, int16_t columns) : Map(lines, columns) {}
 
-	MapVectors* clone() { return new MapVectors(*this); }
+	MapVectors* clone() const { return new MapVectors(*this); }
 
     std::vector<Gentil> gentils() const { return m_gentils; }
     std::vector<Vilain> vilains() const { return m_vilains; }
@@ -145,7 +151,7 @@ public:
 
     virtual ~MapGrid();
 
-	MapGrid* clone() { return new MapGrid(*this); }
+	MapGrid* clone() const { return new MapGrid(*this); }
 
     std::vector<Gentil> gentils() const;
     std::vector<Vilain> vilains() const;
@@ -158,8 +164,6 @@ public:
     void add_group(Group *group);
 
 	void remove_group(int16_t x, int16_t y) { m_grid[y][x].type = 'E'; }
-
-	int16_t heuristic() const;
 
     bool has_battle() const;
     void remove_battles();
