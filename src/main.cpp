@@ -36,12 +36,20 @@ struct ClientData
 
 void create_client(void* data)
 {
-	// Create client
 	ClientData *client_data = (ClientData*) data;
 	Client client(client_data->host, client_data->port, client_data->pseudo, client_data->max_depth, client_data->action_method, client_data->max_groups);
 	client.connect();
 	client.send_name();
 	client.start();
+}
+
+void create_client_manual(void* data)
+{
+	ClientData *client_data = (ClientData*)data;
+	Client client(client_data->host, client_data->port, client_data->pseudo, client_data->max_depth, client_data->action_method, client_data->max_groups);
+	client.connect();
+	client.send_name();
+	client.start_manual();
 }
 
 int main(int argc, char const *argv[])

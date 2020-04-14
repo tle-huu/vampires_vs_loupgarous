@@ -106,7 +106,61 @@ int Client::start()
 			std::cout << "TURN " << turns_ << std::endl << std::endl;
 			send_move();
 			std::cout << "Process time: " << chrono_ << std::endl << std::endl;
-			//Sleep(1000); // in order to see the moves for debugging
+			Sleep(2000); // in order to see the moves for debugging
+		}
+
+		// Check to restart a game
+		if (!connected_)
+		{
+			break;
+		}
+	}
+
+	return EXIT_SUCCESS;
+}
+
+int Client::start_manual()
+{
+	// Check if the client is connected to the game server
+	if (!connected_)
+	{
+		return EXIT_FAILURE;
+	}
+
+	while (connected_)
+	{
+		// Reset attributes
+		running_ = true;
+		turns_ = 0;
+		first_ = false;
+		current_max_vilain_groups_ = 1;
+
+		// Receive first two messages to initialize the map
+		handle_data();
+		handle_data();
+
+		while (running_)
+		{
+			// Receive data from server to update map
+			handle_data();
+
+			// Update turns counter
+			++turns_;
+
+			// Check if the game is not ended
+			if (!running_)
+			{
+				break;
+			}
+
+			// Update max vilain groups
+			set_max_vilain_groups();
+
+			// Send player's move to server
+			std::cout << "TURN " << turns_ << std::endl << std::endl;
+			send_move_manual();
+			std::cout << "Process time: " << chrono_ << std::endl << std::endl;
+			Sleep(2000); // in order to see the moves for debugging
 		}
 
 		// Check to restart a game
@@ -157,31 +211,13 @@ int16_t Client::get_max_depth() const
 		return max_depth_ - 1;
 	}
 
-	if (max_depth_ == 4 && max_gentil_groups_ == 3)
+	/*if (max_depth_ == 4 && max_gentil_groups_ == 3)
 	{
 		if (gentils == 2 && vilains == 2)
 		{
-			int big_groups = 0;
-			for (Gentil const& gentil : map_->gentils())
-			{
-				if (gentil.number() >= 4)
-				{
-					++big_groups;
-				}
-			}
-			for (Vilain const& vilain : map_->vilains())
-			{
-				if (vilain.number() >= 4)
-				{
-					++big_groups;
-				}
-			}
-			if (big_groups >= 2)
-			{
-				return max_depth_ - 1;
-			}
+			return max_depth_ - 1;
 		}
-	}
+	}*/
 
 	return max_depth_;
 }
@@ -230,6 +266,61 @@ int Client::send_move()
 	std::cout << action << std::endl << std::endl;
 
     return send(buffer_, 3 + 1 + 5 * moves.size());
+}
+
+int Client::send_move_manual()
+{
+	std::memset(buffer_, 0, BUFFER_MAX_SIZE);
+
+	std::memcpy(buffer_, "MOV", 3);
+
+	std::cout << "MOV" << std::endl;
+
+	int moves_size;
+	std::cin >> moves_size;
+	std::cout << "moves: " << moves_size << std::endl;
+
+	const char size = static_cast<char>(moves_size);
+	std::memcpy(buffer_ + 3, &size, 1);
+
+	std::vector<Move> moves;
+	for (int i = 0; i < moves_size; ++i)
+	{
+		int start_x, start_y, n, end_x, end_y;
+		std::cin >> start_x;
+		std::cin >> start_y;
+		std::cin >> n;
+		std::cin >> end_x;
+		std::cin >> end_y;
+
+		Move move(start_x, start_y, n, end_x, end_y);
+		moves.push_back(move);
+
+		std::cout << move << std::endl;
+	}
+
+	std::cout << std::endl;
+
+	int index = 4;
+	for (Move const& move : moves)
+	{
+		char start_x = static_cast<char>(move.start().x());
+		std::memcpy(buffer_ + index++, &start_x, 1);
+
+		char start_y = static_cast<char>(move.start().y());
+		std::memcpy(buffer_ + index++, &start_y, 1);
+
+		char n = static_cast<char>(move.number());
+		std::memcpy(buffer_ + index++, &n, 1);
+
+		char end_x = static_cast<char>(move.end().x());
+		std::memcpy(buffer_ + index++, &end_x, 1);
+
+		char end_y = static_cast<char>(move.end().y());
+		std::memcpy(buffer_ + index++, &end_y, 1);
+	}
+
+	return send(buffer_, 3 + 1 + 5 * moves.size());
 }
 
 int Client::handle_data()

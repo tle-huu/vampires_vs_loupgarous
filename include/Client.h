@@ -38,6 +38,7 @@ public:
 	int send_name();
 
     int start();
+	int start_manual();
 
 
 private:
@@ -49,6 +50,7 @@ private:
     int send(char const *data, int size) const;
 
 	int send_move();
+	int send_move_manual();
 
     int handle_data();
 
