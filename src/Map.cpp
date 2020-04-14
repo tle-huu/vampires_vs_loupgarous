@@ -31,41 +31,55 @@ int16_t Map::heuristic(bool turn) const
 
 int16_t Map::utility(bool turn) const
 {
-    if (is_terminal())
+	int16_t gentils_num = gentils_number(), vilains_num = vilains_number();
+	int16_t value = 0;
+
+	// Terminal state
+	if (gentils_num == 0 || vilains_num == 0)
     {
-		int16_t value = 0;
+		// Equality
+		if (gentils_num + vilains_num == 0)
+		{
+			return 0;
+		}
+
+		value = 1;
 		for (Human const& human : humans())
 		{
 			value += human.number();
 		}
-		value += gentils_number() + 1;
-		if (gentils_number() == 0)
+
+		// Loosing state
+		if (gentils_num == 0)
     	{
-			if (vilains_number() == 0)
-			{
-				return 0;
-			}
-			return -value;
+			value += vilains_num;
+			value *= -1;
     	}
+
+		// Winning state
     	else // vilains_number() == 0
     	{
-			return value;
+			value += gentils_num;
     	}
     }
-	int16_t value = heuristic(turn);
-	int16_t gentils_num = gentils_number(), vilains_num = vilains_number();
-	if (2 * gentils_num >= 3 * vilains_num)
-	{
-		value += gentils_num;
-	}
-	else if (2 * vilains_num >= 3 * gentils_num)
-	{
-		value -= vilains_num;
-	}
+
 	else
 	{
-		value += 2 * (gentils_number() - vilains_number());
+		value += heuristic(turn);
+		if (2 * gentils_num >= 3 * vilains_num)
+		{
+			value += gentils_num;
+		}
+		else if (2 * vilains_num >= 3 * gentils_num)
+		{
+			value -= vilains_num;
+		}
+		else
+		{
+			value += 2 * (gentils_number() - vilains_number());
+		}
 	}
+	
 	return value;
 }
 

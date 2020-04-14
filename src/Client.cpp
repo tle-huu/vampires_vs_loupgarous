@@ -140,13 +140,49 @@ void Client::set_max_vilain_groups()
 int16_t Client::get_max_depth() const
 {
 	// Optimization
-	/*if (max_gentil_groups_ == 3)
+	int gentils = map_->gentils().size(), vilains = map_->vilains().size();
+
+	if (map_->humans().size() == 0)
 	{
-		if (map_->gentils().size() == 3)
+		return max_depth_ + 2;
+	}
+
+	if (gentils + vilains <= 2)
+	{
+		return max_depth_ + 1;
+	}
+
+	if (gentils + vilains >= 5)
+	{
+		return max_depth_ - 1;
+	}
+
+	if (max_depth_ == 4 && max_gentil_groups_ == 3)
+	{
+		if (gentils == 2 && vilains == 2)
 		{
-			return max_depth_ - 1;
+			int big_groups = 0;
+			for (Gentil const& gentil : map_->gentils())
+			{
+				if (gentil.number() >= 4)
+				{
+					++big_groups;
+				}
+			}
+			for (Vilain const& vilain : map_->vilains())
+			{
+				if (vilain.number() >= 4)
+				{
+					++big_groups;
+				}
+			}
+			if (big_groups >= 2)
+			{
+				return max_depth_ - 1;
+			}
 		}
-	}*/
+	}
+
 	return max_depth_;
 }
 

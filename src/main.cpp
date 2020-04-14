@@ -104,6 +104,7 @@ int main(int argc, char const *argv[])
 	{
 		HANDLE myhandleA, myhandleB;
 		myhandleA = (HANDLE)_beginthread(&create_client, 0, &client_data);
+		Sleep(500);
 		myhandleB = (HANDLE)_beginthread(&create_client, 0, &client_data2);
 		WaitForSingleObject(myhandleA, INFINITE);
 		WaitForSingleObject(myhandleB, INFINITE);

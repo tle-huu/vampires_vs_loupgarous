@@ -753,7 +753,10 @@ std::vector<Action> State::actions_customized(int16_t max_groups) const
 										group_moves.push_back(move);
 									}
 								}
-								closest_priority_humans.push_back(human);
+								else if (human.number() < gentil.number())
+								{
+									closest_priority_humans.push_back(human);
+								}
 							}
 						}
 						int len = closest_priority_humans.size();
@@ -767,7 +770,7 @@ std::vector<Action> State::actions_customized(int16_t max_groups) const
 								for (int j = i + 1; j < len; ++j)
 								{
 									priority_human2 = closest_priority_humans[j];
-									int16_t number = gentil.number() - priority_human1.number() + priority_human2.number();
+									int16_t number = gentil.number() - priority_human1.number() - priority_human2.number();
 									if (number >= 0)
 									{
 										//for (int k = 0; k <= number; ++k)
@@ -916,7 +919,10 @@ std::vector<Action> State::actions_customized(int16_t max_groups) const
 										group_moves.push_back(move);
 									}
 								}
-								closest_priority_humans.push_back(human);
+								else if (human.number() < vilain.number())
+								{
+									closest_priority_humans.push_back(human);
+								}
 							}
 						}
 						int len = closest_priority_humans.size();
@@ -930,7 +936,7 @@ std::vector<Action> State::actions_customized(int16_t max_groups) const
 								for (int j = i + 1; j < len; ++j)
 								{
 									priority_human2 = closest_priority_humans[j];
-									int16_t number = vilain.number() - priority_human1.number() + priority_human2.number();
+									int16_t number = vilain.number() - priority_human1.number() - priority_human2.number();
 									if (number >= 0)
 									{
 										//for (int k = 0; k <= number; ++k)
